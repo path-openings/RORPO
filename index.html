@@ -19,7 +19,7 @@
   <body>
     <header>
       <div class="inner">
-        <h1>Rorpo</h1>
+        <h1>RORPO</h1>
         <h2>Ranking Operator Response of Path Openings</h2>
         <a href="https://github.com/path-openings/RORPO" class="button"><small>View project on</small>GitHub</a>
       </div>
@@ -29,38 +29,101 @@
       <div class="inner clearfix">
         <section id="main-content">
           <h3>
-<a name="welcome-to-github-pages" class="anchor" href="#welcome-to-github-pages"><span class="octicon octicon-link"></span></a>Welcome to GitHub Pages.</h3>
+<a name="welcome-to-rorpo-pages" class="anchor" href="#welcome-to-github-pages"><span class="octicon octicon-link"></span></a>Welcome to RORPO Pages.</h3>
 
-<iframe width="640" height="480" src="//www.youtube.com/embed/PCJ77tWCeLU?rel=0" frameborder="0" allowfullscreen></iframe> <iframe width="640" height="480" src="//www.youtube.com/embed/PCJ77tWCeLU?rel=0" frameborder="0" allowfullscreen></iframe>
+<p>Thin objects in 3D volumes, for instance vascular networks in medical
+imaging or various kinds of fibres in materials science, have been of
+interest for some time to computer vision. Particularly, tubular
+objects are everywhere elongated in one principal direction – which
+varies spatially – and are thin in the other two perpendicular
+directions. Filters for detecting such structures use for instance an
+analysis of the three principal directions of the Hessian, which is a
+local feature. RORPO is a low-level tubular
+structure detection filter. This filter relies on paths, which are
+semi-global features that avoid any blurring effect induced by
+scale-space convolution. More precisely, our filter is based on
+recently developed morphological path operators. 
 
-<p>This automatic page generator is the easiest way to create beautiful pages for all of your projects. Author your page content here using GitHub Flavored Markdown, select a template crafted by a designer, and publish. After your page is generated, you can check out the new branch:</p>
+The theory for the RORPO filters, together with validation
+experiments, has been published at <a href="http://eccv2014.org/" target="_blank">ECCV
+2014</a>.The paper is avaliable on
+the <a href="http://hal.archives-ouvertes.fr/hal-00990014" target="_blank">HAL
+repository</a>.
+</p>
+
+<center>
+<iframe width="420" height="315" src="//www.youtube.com/embed/PCJ77tWCeLU" frameborder="0" allowfullscreen></iframe>
+<iframe width="420" height="315" src="//www.youtube.com/embed/Y51f6qQ0Hm8" frameborder="0" allowfullscreen></iframe>
+</center>
+
+
+<h3>
+<a name="Implementation" class="anchor" href="#implementation"><span class="octicon octicon-link"></span></a>Implementation</h3>
+
+
+<p>Both Linux and Windows C++ implementations of the RORPO filter are available. We provide two binary executables: 
+<ul>
+<li> A 64-bits Windows executable (RORPO.exe) which was compiled with Visual Studio 2010. It requires Visual Studio 2010 C++ redistributable librairies, available here :  http://www.microsoft.com/en-US/download/details.aspx?id=5555.
+<li> A 64-bits Linux executable (RORPO) which was compiled with GNU C++ on Ubuntu 12.04 LTS. It requires the installation of libVTK5.8 ({\tt apt-get install libvtk5.8})
+</ul>
+
+The Windows implementation can only read short meta images (.mhd and .mha). A binary mask can be provided to the filtering method to accelerate computation. The arguments are as follows :
+<p>
+
+<pre><code>
+char image_path : path to the meta image
+int Lmin : Minimal path length of RORPO
+int Lmax : Maximal path length of RORPO
+int nb_scale : Number of scales between Lmin and Lmax
+int G : Number of noise pixels accepted (set to 0 or 1)
+char image_write_path : path to write the filtered image.
+char mask : path to a binary mask image (0 and 1)
+
+Usage examples :
+RORPO 'input.mha' 30 60 2 1 'result.mha'
+RORPO --mask 'mask_image.mha' 'input.mha' 30 60 2 1 'result.mha'
+</code></pre>
+
+
+
+<p>The Linux implementation can read both short meta images and short nifti images (.nii). A binary mask could be provided to the filtering method to accelerate computation. The arguments are as follows :</p>
+
+<pre><code>
+char image_path : path to the meta image
+int Lmin : Minimal path length of RORPO
+int Lmax : Maximal path length of RORPO
+int nb_scale : Number of scales between Lmin and Lmax
+int G : Number of noise pixels accepted (set to 0 or 1)
+char image_write_path : path to write the filtered image.
+int extension : 1 for nifti image input; 0 for meta image input.
+char mask : path to a binary mask image (0 and 1)
+
+Usage examples :
+RORPO input.nii 30 60 2 1 result.nii 1
+RORPO --mask 'mask_image.mha' 'input.mha' 30 60 2 1 'result.mha' 0
+</code></pre>
+
+<p>The synthetic image of the article (<code>synthetic_image.nii</code>) is also
+provided to quickly test the filtering.  Moreover, we provide both the
+Patient00 of the Rotterdam repository (<code>ChallengePatient00.nii.bz2</code> in
+the bz2 compressed format) and the RORPO filtering result
+(<code>ChallengePatient00_RORPO_20_50_4.nii.bz2</code> in the bz2 compressed
+format).</p>
 
 <pre><code>$ cd your_repo_root/repo_name
 $ git fetch origin
 $ git checkout gh-pages
 </code></pre>
 
-<p>If you're using the GitHub for Mac, simply sync your repository and you'll see the new branch.</p>
-
-<h3>
-<a name="designer-templates" class="anchor" href="#designer-templates"><span class="octicon octicon-link"></span></a>Designer Templates</h3>
-
-<p>We've crafted some handsome templates for you to use. Go ahead and continue to layouts to browse through them. You can easily go back to edit your page before publishing. After publishing your page, you can revisit the page generator and switch to another theme. Your Page content will be preserved if it remained markdown format.</p>
-
-<h3>
-<a name="rather-drive-stick" class="anchor" href="#rather-drive-stick"><span class="octicon octicon-link"></span></a>Rather Drive Stick?</h3>
-
-<p>If you prefer to not use the automatic generator, push a branch named <code>gh-pages</code> to your repository to create a page manually. In addition to supporting regular HTML content, GitHub Pages support Jekyll, a simple, blog aware static site generator written by our own Tom Preston-Werner. Jekyll makes it easy to create site-wide headers and footers without having to copy them across every page. It also offers intelligent blog support and other advanced templating features.</p>
 
 <h3>
 <a name="authors-and-contributors" class="anchor" href="#authors-and-contributors"><span class="octicon octicon-link"></span></a>Authors and Contributors</h3>
 
-<p>You can <a href="https://github.com/blog/821" class="user-mention">@mention</a> a GitHub username to generate a link to their profile. The resulting <code>&lt;a&gt;</code> element will link to the contributor's GitHub Profile. For example: In 2007, Chris Wanstrath (<a href="https://github.com/defunkt" class="user-mention">@defunkt</a>), PJ Hyett (<a href="https://github.com/pjhyett" class="user-mention">@pjhyett</a>), and Tom Preston-Werner (<a href="https://github.com/mojombo" class="user-mention">@mojombo</a>) founded GitHub.</p>
+This project is maintained by Odyssée Merveille, Hugues Talbot (<a href="https://github.com/hugues-talbot"
+class="user-mention">@hugues-talbot</a>), Laurent Najman (<a href="https://github.com/lnajman"
+class="user-mention">@lnajman</a>), and Nicolas Passat.
 
-<h3>
-<a name="support-or-contact" class="anchor" href="#support-or-contact"><span class="octicon octicon-link"></span></a>Support or Contact</h3>
 
-<p>Having trouble with Pages? Check out the documentation at <a href="http://help.github.com/pages">http://help.github.com/pages</a> or contact <a href="mailto:support@github.com">support@github.com</a> and we’ll help you sort it out.</p>
         </section>
 
         <aside id="sidebar">
