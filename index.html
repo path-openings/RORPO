@@ -69,48 +69,42 @@ repository</a>.
 <li> A function computing the multiscale Ranking Orientations Responses of Path Operators (RORPO_multiscale)
 </ul>
 
-The Windows implementation can only read short meta images (.mhd and .mha). A binary mask can be provided to the filtering method to accelerate computation. The arguments are as follows :
+Compiling the library can be done using Cmake. A CMakeLists is provided and a change of the LIBRARY_OUTPUT_PATH is needed to your own directory.
+</p>
+
 <p>
+In the RORPO_multiscale_Usage directory, you can find the full RORPO_multiscale function used in the ECCV paper. 
+<ul>
+<li> Compile the libRORPO
+<li> Compile the function with the CMakeLists in the RORPO_multiscale_Usage directory. You need to change the path of FIND_LIBRARY to the one where you compiled libRORPO and include_directories to the one where the header libRORPO are.
+</ul>
 
-<pre><code>
-char image_path : path to the meta image
-int Lmin : Minimal path length of RORPO
-int Lmax : Maximal path length of RORPO
-int nb_scale : Number of scales between Lmin and Lmax
-int G : Number of noise pixels accepted (set to 0 or 1)
-char image_write_path : path to write the filtered image.
-char mask : path to a binary mask image (0 and 1)
+The arguments of the function are as follows :
+</p>
 
-Usage examples :
-RORPO 'input.mha' 30 60 2 1 'result.mha'
-RORPO --mask 'mask_image.mha' 'input.mha' 30 60 2 1 'result.mha'
-</code></pre>
+<code>
+--input (-i) : path to the .mha or .nii image. The image type must be short
+--output (-o) : path to write the resulting image."
+--smin (-s) : Minimum path length (int)"
+--factor (-f) : factor for the geometric sequence of scales; scale_(n+1)=factor*scale_(n) (float)
+--nb_scales (-n) : Number of scales (int)
+--extension (-e) : 1 for nifti input image; 0 for mha input image (int).
+	
+--window (-w): (optional) Min and max values of the new intensity range of input image (2 int)
+			    Convert input image to uint8. Intensities inferior to window_min become 0, intensities superior to window_max become 255; Linear transformation between window_min and window_max
+--core (-c): (optional) nb of CPUs used for RPO computation (int)
+--mask or -m : (optional) path to a mask for the input image (0 for the background and 1 for the foreground). The image type must be uint8.
+--debug : (optional) Activation of a debug mode.
+
+Usage Example : ./RORPO_multiscale -i input_image.mha -o result.mha -s 30 -f 1.5 -n 2 -e 0 -m 'Mask_image.mha'
+Usage Example : ./RORPO_multiscale --debug --input input_image.nii -output result.nii -s 30 -f 1.5 -n 2 -e 1 --window 100 3250
+</code>
 
 
+<a name="test_images" class="anchor" href="#test-images"><span class="octicon octicon-link"></span></a>Test Images</h3>
 
-<p>The Linux implementation can read both short meta images and short nifti images (.nii). A binary mask could be provided to the filtering method to accelerate computation. The arguments are as follows :</p>
-
-<pre><code>
-char image_path : path to the meta image
-int Lmin : Minimal path length of RORPO
-int Lmax : Maximal path length of RORPO
-int nb_scale : Number of scales between Lmin and Lmax
-int G : Number of noise pixels accepted (set to 0 or 1)
-char image_write_path : path to write the filtered image.
-int extension : 1 for nifti image input; 0 for meta image input.
-char mask : path to a binary mask image (0 and 1)
-
-Usage examples :
-RORPO input.nii 30 60 2 1 result.nii 1
-RORPO --mask 'mask_image.mha' 'input.mha' 30 60 2 1 'result.mha' 0
-</code></pre>
-
-<p>The synthetic image of the article (<code>synthetic_image.nii</code>) is also
-provided to quickly test the filtering.  Moreover, we provide both the
-Patient00 of the Rotterdam repository (<code>ChallengePatient00.nii.bz2</code> in
-the bz2 compressed format) and the RORPO filtering result
-(<code>ChallengePatient00_RORPO_20_50_4.nii.bz2</code> in the bz2 compressed
-format).</p>
+<p>The synthetic image of the article (<code>plan_spiral_blob_short_5_5_0.9.mha (.nii)</code>) is also
+provided to quickly test the filtering.  Moreover, we provide the RORPO filtering result using the same set of parameters as in the article.</p>
 
 <pre><code>$ cd your_repo_root/repo_name
 $ git fetch origin
@@ -121,7 +115,8 @@ $ git checkout gh-pages
 <h3>
 <a name="authors-and-contributors" class="anchor" href="#authors-and-contributors"><span class="octicon octicon-link"></span></a>Authors and Contributors</h3>
 
-This project is maintained by Odyssée Merveille, <a href="http://hugues.zahlt.info/bienvenue.html" target="_blank">Hugues Talbot</a> (<a href="https://github.com/hugues-talbot"
+This project is maintained by <a href="http://www.odyssee-merveille.com" target="_blank"> Odyssée Merveille</a> (<a href="https://github.com/omerveille"
+class="user-mention">@odyssee-merveille</a>), <a href="http://hugues.zahlt.info/bienvenue.html" target="_blank">Hugues Talbot</a> (<a href="https://github.com/hugues-talbot"
 class="user-mention">@hugues-talbot</a>), <a href="http://laurentnajman.org" target="_blank">Laurent Najman</a> (<a href="https://github.com/lnajman"
 class="user-mention">@lnajman</a>), and <a href="http://crestic.univ-reims.fr/membre/1542-nicolas-passat" target="_blank">Nicolas Passat</a>.
 
