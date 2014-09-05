@@ -61,10 +61,12 @@ repository</a>.
 <a name="Implementation" class="anchor" href="#implementation"><span class="octicon octicon-link"></span></a>Implementation</h3>
 
 
-<p>Both Linux and Windows C++ implementations of the RORPO filter are available. We provide two binary executables: 
+<p>We provide the libRORPO library containing:
 <ul>
-<li> A 64-bits Windows executable (RORPO.exe) which was compiled with Visual Studio 2010. It requires Visual Studio 2010 C++ redistributable librairies, available here :  http://www.microsoft.com/en-US/download/details.aspx?id=5555.
-<li> A 64-bits Linux executable (RORPO) which was compiled with GNU C++ on Ubuntu 12.04 LTS. It requires the installation of libVTK5.8 ({\tt apt-get install libvtk5.8})
+<li> A function computing the Path Opening with one orientation (PO_3D)
+<li> A function computing the Robust Path Opening in all orientations (Get_RPO_Orientations)
+<li> A function computing the Ranking Orientations Responses of Path Operators (RORPO)
+<li> A function computing the multiscale Ranking Orientations Responses of Path Operators (RORPO_multiscale)
 </ul>
 
 The Windows implementation can only read short meta images (.mhd and .mha). A binary mask can be provided to the filtering method to accelerate computation. The arguments are as follows :
