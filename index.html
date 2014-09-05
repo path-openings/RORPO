@@ -77,6 +77,8 @@ In the RORPO_multiscale_Usage directory, you can find the full RORPO_multiscale 
 <ul>
 <li> Compile the libRORPO
 <li> Compile the function with the CMakeLists in the RORPO_multiscale_Usage directory. You need to change the path of FIND_LIBRARY to the one where you compiled libRORPO and include_directories to the one where the header libRORPO are.
+<li> VTK version 6 or greater is needed
+<li Niftilib is needed
 </ul>
 
 The arguments of the function are as follows :
@@ -100,7 +102,7 @@ Usage Example : ./RORPO_multiscale -i input_image.mha -o result.mha -s 30 -f 1.5
 Usage Example : ./RORPO_multiscale --debug --input input_image.nii -output result.nii -s 30 -f 1.5 -n 2 -e 1 --window 100 3250
 </code></pre>
 
-
+<h3>
 <a name="test_images" class="anchor" href="#test-images"><span class="octicon octicon-link"></span></a>Test Images</h3>
 
 <p>The synthetic image of the article (<code>plan_spiral_blob_short_5_5_0.9.mha (.nii)</code>) is also
