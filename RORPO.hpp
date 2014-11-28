@@ -1,3 +1,25 @@
+#ifndef RORPO_INCLUDED
+#define RORPO_INCLUDED
+
+/* Copyright (C) 2014 Odyssee Merveille
+ 
+This file is part of libRORPO
+
+    libRORPO is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    libRORPO is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with libRORPO.  If not, see <http://www.gnu.org/licenses/>.
+   
+*/
+
 #include <stdio.h>
 #include <iostream>
 #include <string.h>
@@ -8,176 +30,214 @@
 #include <omp.h>
 #include <cstdlib>
 
-#include "Get_RPO_Orientations.hpp"
-
-#include "geodilat_modif.hpp"
-#include "diff_buffer.hpp"
-#include "min_modif.hpp"
-#include "max_modif.hpp"
-
 #include "sorting.hpp"
+#include "Algo.hpp"
+#include "Geodilation.hpp"
+#include "RPO.hpp"
 
-
+extern "C" {
+	#include "nifti1_io.h"
+}
 
 template<typename T>
-T* RORPO(T* input_buffer, T* image_dilat, int L, int nb_core, int dimx, int dimy, int dimz)
+Image<T> RORPO(const Image<T> &I, int L, int nb_core)
 {
 
-	// ######################################### RORPO classique #########################################
+	// ######################################### RPO  #########################################
+	
+	// the 7 RPO images with a 2-pixel border 
+	Image<T> RPO1(I.Dimx() + 4, I.Dimy() + 4, I.Dimz() + 4, 2);
+	Image<T> RPO2(I.Dimx() + 4, I.Dimy() + 4, I.Dimz() + 4, 2);
+	Image<T> RPO3(I.Dimx() + 4, I.Dimy() + 4, I.Dimz() + 4, 2);
+	Image<T> RPO4(I.Dimx() + 4, I.Dimy() + 4, I.Dimz() + 4, 2);
+	Image<T> RPO5(I.Dimx() + 4, I.Dimy() + 4, I.Dimz() + 4, 2);
+	Image<T> RPO6(I.Dimx() + 4, I.Dimy() + 4, I.Dimz() + 4, 2);
+	Image<T> RPO7(I.Dimx() + 4, I.Dimy() + 4, I.Dimz() + 4, 2);
+	
+	RPO(I, L, RPO1, RPO2, RPO3, RPO4, RPO5,RPO6, RPO7, nb_core);
 	
 	
-	int image_size=dimx*dimy*dimz;
-   // Buffer for results
-    
-	T *res0=new T[dimx*dimy*dimz];
-	T *res1=new T[dimx*dimy*dimz];
-	T *res2=new T[dimx*dimy*dimz];
-	T *res3=new T[dimx*dimy*dimz];
-	T *res4=new T[dimx*dimy*dimz];
-	T *res5=new T[dimx*dimy*dimz];
-	T *res6=new T[dimx*dimy*dimz];
-
-	
-	// Compute RPO 
-	Get_RPO_Orientations<T>(input_buffer, image_dilat, L, dimz, dimy, dimx, res0, res1, res2, res3, res4, res5, res6, nb_core);
-
-
-    // allocate memory for sorting results
-    T* RPOt0= new T[image_size];
-    T* RPOt1= new T[image_size];
-    T* RPOt2= new T[image_size];
-    T* RPOt3= new T[image_size];
-    T* RPOt4= new T[image_size];
-    T* RPOt5= new T[image_size];
-    T* RPOt6= new T[image_size];
-
-
-    memcpy(&RPOt0[0], &res0[0],image_size*sizeof(T));
-    memcpy(&RPOt1[0], &res1[0],image_size*sizeof(T));
-    memcpy(&RPOt2[0], &res2[0],image_size*sizeof(T));
-    memcpy(&RPOt3[0], &res3[0],image_size*sizeof(T));
-    memcpy(&RPOt4[0], &res4[0],image_size*sizeof(T));
-    memcpy(&RPOt5[0], &res5[0],image_size*sizeof(T));
-    memcpy(&RPOt6[0], &res6[0],image_size*sizeof(T));
-
-    sorting(RPOt0,RPOt1,RPOt2,RPOt3,RPOt4,RPOt5,RPOt6, image_size);
-
-    T *RPO_RPO=diff_buffer(RPOt6,RPOt3,image_size);
-
-    // ######################################### Limit Orientations Treatment #########################################
+	 // ######################################### Limit Orientations Treatment #########################################
 
 	 // ------------------------- Computation of Imin ----------------------------
-
+	 
 	 // ---- Imin limit case 4 orientations ----
-	 //horizontal + vertical + diag1 + diag4
-	 T* Imin4_1=min_alloc(res0,res1,dimx,dimy,dimz);
-     min_crush(Imin4_1,res3,dimx,dimy,dimz);
-     min_crush(Imin4_1,res6,dimx,dimy,dimz);
+	 
+	 Image<T> Imin4(I.Dimx(), I.Dimy(), I.Dimz());
+	  
+	 //horizontal + vertical + diag1 + diag4 
+	 Image<T> Imin4_1 = RPO1.Copy_image();
+	 MinCrush(Imin4_1, RPO2);
+	 MinCrush(Imin4_1, RPO4);
+	 MinCrush(Imin4_1, RPO7);
+	 
+	 MaxCrush(Imin4, Imin4_1);
+	 Imin4_1.ClearImage();
 
      //horizontal + vertical + diag2 + diag3
-     T* Imin4_2=min_alloc(res0,res1,dimx,dimy,dimz);
-     min_crush(Imin4_2,res4,dimx,dimy,dimz);
-     min_crush(Imin4_2,res5,dimx,dimy,dimz);
+     Image<T> Imin4_2 = RPO1.Copy_image();
+	 MinCrush(Imin4_2, RPO2);
+	 MinCrush(Imin4_2, RPO5);
+	 MinCrush(Imin4_2, RPO6);
+	 
+	 MaxCrush(Imin4, Imin4_2);
+	 Imin4_2.ClearImage();
+
 
      //horizontal + profondeur + diag2+ diag4
-     T* Imin4_3=min_alloc(res0,res2,dimx,dimy,dimz);
-     min_crush(Imin4_3,res4,dimx,dimy,dimz);
-     min_crush(Imin4_3,res6,dimx,dimy,dimz);
+     Image<T> Imin4_3 = RPO1.Copy_image();
+	 MinCrush(Imin4_3, RPO3);
+	 MinCrush(Imin4_3, RPO5);
+	 MinCrush(Imin4_3, RPO7);
 
+	 MaxCrush(Imin4, Imin4_3);
+	 Imin4_3.ClearImage();
+	 
+	
      //horizontal + profondeur + diag1+ diag3
-	 T* Imin4_4=min_alloc(res0,res2,dimx,dimy,dimz);
-     min_crush(Imin4_4,res3,dimx,dimy,dimz);
-     min_crush(Imin4_4,res5,dimx,dimy,dimz);
+     Image<T> Imin4_4 = RPO1.Copy_image();
+	 MinCrush(Imin4_4, RPO3);
+	 MinCrush(Imin4_4, RPO4);
+	 MinCrush(Imin4_4, RPO6);
 
+	 MaxCrush(Imin4, Imin4_4);
+	 Imin4_4.ClearImage();
+	 
      //vertical + profondeur + diag1+ diag2
-     T* Imin4_5=min_alloc(res1,res2,dimx,dimy,dimz);
-     min_crush(Imin4_5,res3,dimx,dimy,dimz);
-     min_crush(Imin4_5,res4,dimx,dimy,dimz);
+     Image<T> Imin4_5 = RPO2.Copy_image();
+	 MinCrush(Imin4_5, RPO3);
+	 MinCrush(Imin4_5, RPO4);
+	 MinCrush(Imin4_5, RPO5);
+
+	 MaxCrush(Imin4, Imin4_5);
+	 Imin4_5.ClearImage();	 
 
      //vertical + profondeur + diag3+ diag4
-     T* Imin4_6=min_alloc(res1,res2,dimx,dimy,dimz);
-     min_crush(Imin4_6,res5,dimx,dimy,dimz);
-     min_crush(Imin4_6,res6,dimx,dimy,dimz);
+     Image<T> Imin4_6 = RPO2.Copy_image();
+	 MinCrush(Imin4_6, RPO3);
+	 MinCrush(Imin4_6, RPO6);
+	 MinCrush(Imin4_6, RPO7);
+ 
+ 	 MaxCrush(Imin4, Imin4_6);
+	 Imin4_6.ClearImage();    
 
-     // Final
-     T* Imin4=max_alloc(Imin4_1,Imin4_2,dimx,dimy,dimz);
-     max_crush(Imin4,Imin4_3,dimx,dimy,dimz);
-     max_crush(Imin4,Imin4_4,dimx,dimy,dimz);
-     max_crush(Imin4,Imin4_5,dimx,dimy,dimz);
-     max_crush(Imin4,Imin4_6,dimx,dimy,dimz);
+ 
 
 	 // ---- Imin limit case 5 orientations ----
-    T* Imin5=min_alloc(res3,res4,dimx,dimy,dimz);
-    min_crush(Imin5,res5,dimx,dimy,dimz);
-    min_crush(Imin5,res6,dimx,dimy,dimz);
+	 Image<T> Imin5 = RPO4.Copy_image();
+	 MinCrush(Imin5, RPO5);
+	 MinCrush(Imin5, RPO6);
+	 MinCrush(Imin5, RPO7);
+	
+	
+	// ######################################### Sorting RPO orientations #########################################
+	
+	Image<T> RPOt1 = RPO1.Copy_image();
+	Image<T> RPOt2 = RPO2.Copy_image();
+	Image<T> RPOt3 = RPO3.Copy_image();
+	Image<T> RPOt4 = RPO4.Copy_image();
+	Image<T> RPOt5 = RPO5.Copy_image();
+	Image<T> RPOt6 = RPO6.Copy_image();
+	Image<T> RPOt7 = RPO7.Copy_image();
+	
+	 // Clear Images which are non useful anymore
+	 RPO1.ClearImage();
+	 RPO2.ClearImage();
+	 RPO3.ClearImage();
+	 RPO4.ClearImage();
+	 RPO5.ClearImage();
+	 RPO6.ClearImage();
+	 RPO7.ClearImage();
+	
+    sorting(RPOt1, RPOt2, RPOt3, RPOt4, RPOt5, RPOt6, RPOt7, RPOt1.ImageSize());
+	
+	 // Clear Images which are non useful anymore
+    RPOt1.ClearImage();
+    RPOt5.ClearImage();
+    RPOt6.ClearImage();
+
+	// Compute RORPO without limit orientations
+    Image<T> RORPO_res = Diff(RPOt7, RPOt4);
+    RPOt7.ClearImage();
+    
+    
+   /* int t[]={3,RORPO_res.Dimx(),RORPO_res.Dimy(),RORPO_res.Dimz(),0,0,0,0};
+	nifti_image* nim=nifti_make_new_nim(t,4,1);
+	
+	nim->data=(void*)RORPO_res.GetPointer();
+	int test=nifti_set_filenames(nim,"../Results/RORPO_pas_limit_ori_30.nii",0,nim->byteorder);
+	nifti_image_write(nim);
+	
+	nim->data=(void*)RPOt4.GetPointer();
+	int test2=nifti_set_filenames(nim,"../Results/RPOt4_30.nii",0,nim->byteorder);
+	nifti_image_write(nim);*/
+
 
     // ------------------------- Computation of Imin2 ----------------------------
     //geodesic reconstruction of RPO6 in RPO4
-    T* RPO6=geodilat_modif(RPOt1,RPOt3,18,-1,dimx,dimy,dimz);
+    Image<T> RPO6_geo = Geodilation(RPOt2, RPOt4, 18, -1);
+    RPOt2.ClearImage();
 
     //geodesic reconstruction of RPO5 in RPO4
-    T* RPO5=geodilat_modif(RPOt2,RPOt3,18,-1,dimx,dimy,dimz);
+    Image<T> RPO5_geo = Geodilation(RPOt3, RPOt4, 18, -1);;
+    RPOt3.ClearImage();
+    RPOt4.ClearImage();
 
     // ---- Imin2 limit case 4 orientations ----
-    T* Imin2_4=min_alloc(Imin4,RPO5,dimx,dimy,dimz);
+    Image<T> Imin2_4 = Imin4.Copy_image();
+    MinCrush(Imin2_4, RPO5_geo);
+    RPO5_geo.ClearImage();
+
 
     // ---- Imin2 limit case 5 orientations ----
-    T* Imin2_5=min_alloc(Imin5,RPO6,dimx,dimy,dimz);
+    Image<T> Imin2_5 = Imin5.Copy_image();
+    MinCrush(Imin2_5, RPO6_geo);
+    
+    /*nim->data=(void*)Imin5.GetPointer();
+	int test7=nifti_set_filenames(nim,"../Results/Imin5.nii",0,nim->byteorder);
+	nifti_image_write(nim);
+	
+    nim->data=(void*)RPO6_geo.GetPointer();
+	int test6=nifti_set_filenames(nim,"../Results/RPO6_geo.nii",0,nim->byteorder);
+	nifti_image_write(nim);*/
+	
+	
+    RPO6_geo.ClearImage();
+
 
     // ------------------------- Final Result --------------------------------
 
-    T* diff_Imin4=diff_buffer(Imin4,Imin2_4,image_size);
-    T* diff_Imin5=diff_buffer(Imin5,Imin2_5,image_size);
-
-    T* RPO_RPO_limit_orientations=max_alloc(RPO_RPO,diff_Imin4,dimx,dimy,dimz);
-    max_crush(RPO_RPO_limit_orientations,diff_Imin5,dimx,dimy,dimz);
-    
-    
-    /*nifti_image *nim=NULL;
-    nim = nifti_image_read("/medit/data/Images/Images_synthetiques/Niveaux_gris/Plan_Spiral_3D/short/plan_spiral_blob_short_5_5_0.9.nii", 1);
-    NewPT* image=((NewPT*)(nim->data));
-   
- 	std::ostringstream write;
-	write<< "/medit/home/odyssee/Documents/VIVABRAIN/Programme/Code_RORPO/RORPO_dilat/test/multiscale_"<<L<<".nii";
-   
-    std::cout<<"Write"<<std::endl;
-	nim->data=RPO_RPO_limit_orientations;
-	int test=nifti_set_filenames(nim,write.str().c_str(),0,nim->byteorder);
+	Image<T> Diff_Imin4 = Diff(Imin4, Imin2_4);
+	Image<T> Diff_Imin5 = Diff(Imin5, Imin2_5);
+	
+	/*nim->data=(void*)Diff_Imin4.GetPointer();
+	int test3=nifti_set_filenames(nim,"../Results/Diff_Imin4.nii",0,nim->byteorder);
 	nifti_image_write(nim);
-*/
-   // Free memory before ending
-   free(Imin2_4);
-   free(Imin2_5);
-   free(Imin4);
-   free(Imin5);
-   free(Imin4_1);
-   free(Imin4_2);
-   free(Imin4_3);
-   free(Imin4_4);
-   free(Imin4_5);
-   free(Imin4_6);
-   delete[] diff_Imin4;
-   delete[] diff_Imin5;
-   free(RPO5);
-   free(RPO6);
-   delete[] RPO_RPO;
+	
+	nim->data=(void*)Diff_Imin5.GetPointer();
+	int test4=nifti_set_filenames(nim,"../Results/Diff_Imin5.nii",0,nim->byteorder);
+	nifti_image_write(nim);
+	
+	nim->data=(void*)Imin2_5.GetPointer();
+	int test8=nifti_set_filenames(nim,"../Results/Imin2_5.nii",0,nim->byteorder);
+	nifti_image_write(nim);*/
+	
+	Imin4.ClearImage();
+	Imin2_4.ClearImage();
+	Imin5.ClearImage();
+	Imin2_5.ClearImage();
+	
+	MaxCrush(RORPO_res, Diff_Imin4);
+	
+	/*nim->data=(void*)RORPO_res.GetPointer();
+	int test5=nifti_set_filenames(nim,"../Results/RORPO_OL4.nii",0,nim->byteorder);
+	nifti_image_write(nim);*/
+	
+	MaxCrush(RORPO_res, Diff_Imin5);
+	
 
-   delete[](res0);
-   delete[](res1);
-   delete[](res2);
-   delete[](res3);
-   delete[](res4);
-   delete[](res5);
-   delete[](res6);
-
-   delete[](RPOt0);
-   delete[](RPOt1);
-   delete[](RPOt2);
-   delete[](RPOt3);
-   delete[](RPOt4);
-   delete[](RPOt5);
-   delete[](RPOt6);
-
-   return RPO_RPO_limit_orientations;
+   return RORPO_res;
    
 }
+
+#endif // RORPO_INCLUDED

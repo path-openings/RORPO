@@ -1,6 +1,25 @@
 #ifndef PO_INCLUDED
 #define PO_INCLUDED
 
+/* Copyright (C) 2014 Odyssee Merveille
+ 
+This file is part of libRORPO
+
+    libRORPO is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    libRORPO is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with libRORPO.  If not, see <http://www.gnu.org/licenses/>.
+   
+*/
+
 #include <iostream>
 #include <string>
 #include <omp.h>
@@ -10,9 +29,9 @@
 #include <iterator>
 #include <cassert>
 
-#include <liarp.h>
-#include <genfmin.hpp>
-#include <genfmax.hpp>
+#include "rect3dmm.hpp"
+#include "sorting.hpp"
+#include "Image.hpp"
 
 typedef long IndexType;
 
@@ -218,42 +237,6 @@ void createNeighbourhood(	int nb_col,
 
 }
 
-template<typename PixelType>
-bool my_sorting_function (const PixelType *i,const PixelType *j)
-// Input: i, j : two variables containing memory adress pointing to PixelType variables.
-// Return : True if the variable pointed by i is smaller than the variabled pointed by j
-{
-	return (*i<*j);
-}
-
-template<typename PixelType,typename IndexType>
-std::vector<IndexType> sort_image_value(std::vector<PixelType> I)
-//  Return pixels index of image I sorted according to intensity
-{
-	std::vector<IndexType> index_image(I.size());
-	std::vector<PixelType*>index_pointer_adress(I.size());
-	IndexType it;
-	typename std::vector<PixelType>::iterator it1;
-	typename std::vector<PixelType*>::iterator it2;
-	typename std::vector<IndexType>::iterator it3;
-
-	// Fill index_pointer_adress with memory adress of variables in I
-	for (it=0,it2=index_pointer_adress.begin(); it!=I.size(); ++it, ++it2)
-	{
-		*it2=&I[it];
-	}
-
-	// Sorting adresses according to intensity
-	std::sort(index_pointer_adress.begin(),index_pointer_adress.end(),my_sorting_function<PixelType>);
-
-	// Conversion from adresses to index of image I
-	for (it3=index_image.begin(),it=0; it!=I.size(); ++it,++it3)
-	{
-		*it3=static_cast<IndexType>(index_pointer_adress[it]-&I[0]);
-	}
-	return index_image;
-}
-
 
 template<typename PixelType>
 void propagate(IndexType p, std::vector<int>&lambda, std::vector<int>&nf, std::vector<int>&nb, std::vector<bool>&b, std::queue<IndexType> &Qc)
@@ -265,7 +248,7 @@ void propagate(IndexType p, std::vector<int>&lambda, std::vector<int>&nf, std::v
 	std::vector<int>::iterator it;
 	for (it=nf.begin(); it!=nf.end();++it)
 	{
-		if ((p+*it)<b.size() and b[p+*it])
+		if ((p+*it)<lambda.size() and b[p+*it])
 		{
 			Qq.push(p+*it);
 		}
@@ -298,42 +281,74 @@ void propagate(IndexType p, std::vector<int>&lambda, std::vector<int>&nf, std::v
 }
 
 // Compute PO with an image which already has a 2-pixel border (good to compute the 7 orientation in parallel)
-template<typename PixelType>
-void PO_3D(	std::vector<PixelType>Image,
-								int new_dimz,
-								int new_dimy,
-								int new_dimx,
-								int L,
-								std::vector<int>orientations,
-								PixelType* Outputbuffer)
+template<typename T>
+void PO_3D(	Image<T> &I,
+			int L,
+			std::vector<IndexType> &index_image,
+			std::vector<int> &orientations,
+			Image<T> &Output)
+			
 //Path opening with orientation
 {
-
+	
+	int new_dimz=I.Dimz();
+	int new_dimy=I.Dimy();
+	int new_dimx=I.Dimx();
+	
 	// Create the temporary image b  (0 for a 1-pixel border, 1 elsewhere)
-	std::vector<bool>b(Image.size(),0);
-	for (int z=0; z<new_dimz-2; ++z){
-		for (int y=0; y<new_dimy-2; ++y){
-			for (int x=0; x<new_dimx-2; ++x)
-			{
-				b[(z+1)*(new_dimx*new_dimy)+(y+1)*new_dimx+(x+1)]=1;
-			}
+	std::vector<bool>b(I.ImageSize(),1);
+	
+	// z=0
+	for (int y = 0; y < I.Dimy() ; ++y){
+		for (int x = 0 ; x < I.Dimx() ; ++x){
+			b[y*new_dimx+x]=0;
 		}
 	}
-
-	int dim_frame=new_dimx*new_dimy;
-
-	// Create the sorted list of index of Image according to intensity
-	std::vector<IndexType>index_image;
-	index_image=sort_image_value<PixelType,IndexType>(Image);
-
+	
+	//z=dimz-1
+	for (int y = 0; y < I.Dimy() ; ++y){
+		for (int x = 0 ; x < I.Dimx() ; ++x){
+			b[(new_dimz-1)*new_dimx*new_dimy+y*new_dimx+x]=0;
+		}
+	}
+	
+	//x=0
+	for (int z = 0 ; z < I.Dimz() ; ++z){
+		for (int y = 0 ; y < I.Dimy() ; ++y){
+			b[z*new_dimx*new_dimy+y*new_dimx]=0;
+		}
+	}
+	
+	//x=dimx-1
+	for (int z = 0 ; z < I.Dimz() ; ++z){
+		for (int y = 0 ; y < I.Dimy() ; ++y){
+			b[z*new_dimx*new_dimy+y*new_dimx+new_dimx-1]=0;
+		}
+	}
+	
+	// y=0
+	for (int z = 0 ; z < I.Dimz(); ++z){
+		for (int x = 0 ; x < I.Dimx() ; ++x){
+			b[z*new_dimy*new_dimx+x]=0;
+		}
+	}
+	
+	// y=dimy-1
+	for (int z = 0 ; z < I.Dimz() ; ++z){
+		for (int x = 0 ; x < I.Dimx() ; ++x){
+			b[z*new_dimy*new_dimx+(new_dimy-1)*new_dimx+x]=0;
+		}
+	}
+	
 	// Create the offset np and nm
 	std::vector<int>np;
 	std::vector<int>nm;
-	createNeighbourhood(new_dimx, dim_frame,orientations,np,nm);
+	createNeighbourhood(I.Dimx(), I.Dimx() * I.Dimy(), orientations, np, nm);
 
 	//Create other temporary images
-	std::vector<int>Lp(Image.size(),L);
-	std::vector<int>Lm(Image.size(),L);
+	std::vector<int>Lp(I.ImageSize(),L);
+	std::vector<int>Lm(I.ImageSize(),L);
+
 
 	//Create FIFO queue Qc
 	std::queue<IndexType> Qc;
@@ -342,30 +357,33 @@ void PO_3D(	std::vector<PixelType>Image,
 	std::vector<IndexType>::iterator it;
 	//std::cerr<<"Avant propagation"<<std::endl;
 	//std::cerr<<"size np et nm:"<<np.size()<<" "<<nm.size()<<std::endl;
+	
+	//std::vector<unsigned char>b_bis=b.GetData();
 
 	int indice;
-	for (it=index_image.begin(), indice=0; it!=index_image.end(); ++it, ++indice)
+	for (it = index_image.begin(), indice = 0 ; it != index_image.end() ; ++it , ++indice)
 	{
 
 		//std::cerr<<"propagation"<<std::endl;
 		if (b[*it])
 		{
-			propagate<PixelType>(*it,Lm,np,nm,b,Qc);
-			propagate<PixelType>(*it,Lp,nm,np,b,Qc);
+			//std::cout<<(float(indice)/index_image.size())*100<<std::endl;
 
-
+			
+			propagate<T>(*it, Lm, np, nm, b, Qc);
+			propagate<T>(*it, Lp, nm, np, b, Qc);
 
 			while (not Qc.empty())
 			{
-				IndexType q=Qc.front();
+				IndexType q = Qc.front();
 				Qc.pop();
-				if (Lp[q]+Lm[q]-1<L)
+				if (Lp[q] + Lm[q]-1 < L)
 				{
 					//std::cout <<"Image["<<q<< "]= "<< Image[*it]<< std::endl;
-					Image[q]=Image[*it];
-					b[q]=0;
-					Lp[q]=0;
-					Lm[q]=0;
+					Output.GetData()[q] = Output.GetData()[*it];
+					b[q] = 0;
+					Lp[q] = 0;
+					Lm[q] = 0;
 				}
 			}
 		}
@@ -373,31 +391,23 @@ void PO_3D(	std::vector<PixelType>Image,
 
 	//Outputbuffer=&Image[0];
 
-	// Remove border
-	for (int z=0; z<new_dimz-4; ++z){
-		for (int y=0; y<new_dimy-4; ++y){
-			for (int x=0; x<new_dimx-4; ++x){
-				Outputbuffer[z*(new_dimx-4)*(new_dimy-4)+y*(new_dimx-4)+x]=Image[(z+2)*(new_dimx*new_dimy)+(y+2)*new_dimx+(x+2)];
-			}
-		}
-	}
 	return ;
 }
 
 // Compute PO with an image which doesn't have a 2-pixels border. (Stand alone PO)
-template<typename PixelType>
-void PO_3D_border(	PixelType* Inputbuffer,
+template<typename T>
+void PO_3D_border(	T* Inputbuffer,
 								int dimz,
 								int dimy,
 								int dimx,
 								int L,
 								std::vector<int>orientations,
-								PixelType* Outputbuffer)
+								T* Outputbuffer)
 //Path opening with orientation
 {
 
 	// Add border of 2 pixels which value is 0 to *Inputbuffer
-	std::vector<PixelType> Image((dimz+4)*(dimy+4)*(dimx+4),0);
+	std::vector<T> Image((dimz+4)*(dimy+4)*(dimx+4),0);
     //std::vector<bool>b(Image.size(),0);
 	int new_dimy=dimy+4;
 	int new_dimx=dimx+4;
@@ -425,7 +435,7 @@ void PO_3D_border(	PixelType* Inputbuffer,
 
 	// Create the sorted list of index of Image according to intensity
 	std::vector<IndexType>index_image;
-	index_image=sort_image_value<PixelType>(Image);
+	index_image=sort_image_value<T>(Image);
 
 	// Create the offset np and nm
 	std::vector<int>np;
@@ -451,8 +461,8 @@ void PO_3D_border(	PixelType* Inputbuffer,
 		//std::cerr<<"propagation"<<std::endl;
 		if (b[*it])
 		{
-			propagate<PixelType>(*it,Lm,np,nm,b,Qc);
-			propagate<PixelType>(*it,Lp,nm,np,b,Qc);
+			propagate<T>(*it,Lm,np,nm,b,Qc);
+			propagate<T>(*it,Lp,nm,np,b,Qc);
 
 
 
