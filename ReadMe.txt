@@ -1,5 +1,10 @@
 ################ libRORPO ###############
 
+WARNING :
+All images must have an isotropic image resolution (cubic voxels).
+Image intensities should be integers.
+
+
 ---------- File PO.hpp ----------
 
 PO_3D : 

@@ -1,8 +1,9 @@
 ################ RORPO Multiscale Usage ##############
 
-Compute the RORPO multiscale from a .nii image.
+Compute the RORPO multiscale for blood vessels from a .nii image.
 
 Accepted type : int8, uint8, int16, uint16, int32, uint32, float
+An isotropic image resolution is required (cubic voxels). 
 
 Parameters : 
 --input (-i) : path to .nii image (string).
