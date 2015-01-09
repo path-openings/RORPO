@@ -280,7 +280,6 @@ void propagate(IndexType p, std::vector<int>&lambda, std::vector<int>&nf, std::v
 	}
 }
 
-// Compute PO with an image which already has a 2-pixel border (good to compute the 7 orientation in parallel)
 template<typename T>
 void PO_3D(	Image<T> &I,
 			int L,
@@ -288,7 +287,6 @@ void PO_3D(	Image<T> &I,
 			std::vector<int> &orientations,
 			Image<T> &Output)
 			
-//Path opening with orientation
 {
 	
 	int new_dimz=I.Dimz();
@@ -389,109 +387,6 @@ void PO_3D(	Image<T> &I,
 		}
 	}
 
-	//Outputbuffer=&Image[0];
-
-	return ;
-}
-
-// Compute PO with an image which doesn't have a 2-pixels border. (Stand alone PO)
-template<typename T>
-void PO_3D_border(	T* Inputbuffer,
-								int dimz,
-								int dimy,
-								int dimx,
-								int L,
-								std::vector<int>orientations,
-								T* Outputbuffer)
-//Path opening with orientation
-{
-
-	// Add border of 2 pixels which value is 0 to *Inputbuffer
-	std::vector<T> Image((dimz+4)*(dimy+4)*(dimx+4),0);
-    //std::vector<bool>b(Image.size(),0);
-	int new_dimy=dimy+4;
-	int new_dimx=dimx+4;
-	for (int z=0; z<dimz; ++z){
-		for (int y=0; y<dimy; ++y){
-			for (int x=0; x<dimx; ++x){
-				Image[(z+2)*(new_dimx*new_dimy)+(y+2)*new_dimx+(x+2)]=Inputbuffer[z*dimx*dimy+y*dimx+x];
-				//b[(z+2)*(new_dimx*new_dimy)+(y+2)*new_dimx+(x+2)]=1;
-			}
-		}
-	}
-
-	// Create the temporary image b  (0 for a 1-pixel border, 1 elsewhere)
-	std::vector<bool>b(Image.size(),0);
-	for (int z=0; z<dimz+2; ++z){
-		for (int y=0; y<dimy+2; ++y){
-			for (int x=0; x<dimx+2; ++x)
-			{
-				b[(z+1)*(new_dimx*new_dimy)+(y+1)*new_dimx+(x+1)]=1;
-			}
-		}
-	}
-
-	int dim_frame=new_dimx*new_dimy;
-
-	// Create the sorted list of index of Image according to intensity
-	std::vector<IndexType>index_image;
-	index_image=sort_image_value<T>(Image);
-
-	// Create the offset np and nm
-	std::vector<int>np;
-	std::vector<int>nm;
-	createNeighbourhood(new_dimx, dim_frame,orientations,np,nm);
-
-	//Create other temporary images
-	std::vector<int>Lp(Image.size(),L);
-	std::vector<int>Lm(Image.size(),L);
-
-	//Create FIFO queue Qc
-	std::queue<IndexType> Qc;
-
-	// Propagate
-	std::vector<IndexType>::iterator it;
-	//std::cerr<<"Avant propagation"<<std::endl;
-	//std::cerr<<"size np et nm:"<<np.size()<<" "<<nm.size()<<std::endl;
-
-	int indice;
-	for (it=index_image.begin(), indice=0; it!=index_image.end(); ++it, ++indice)
-	{
-
-		//std::cerr<<"propagation"<<std::endl;
-		if (b[*it])
-		{
-			propagate<T>(*it,Lm,np,nm,b,Qc);
-			propagate<T>(*it,Lp,nm,np,b,Qc);
-
-
-
-			while (not Qc.empty())
-			{
-				IndexType q=Qc.front();
-				Qc.pop();
-				if (Lp[q]+Lm[q]-1<L)
-				{
-					//std::cout <<"Image["<<q<< "]= "<< Image[*it]<< std::endl;
-					Image[q]=Image[*it];
-					b[q]=0;
-					Lp[q]=0;
-					Lm[q]=0;
-				}
-			}
-		}
-	}
-
-	//Outputbuffer=&Image[0];
-
-	// Remove border
-	for (int z=0; z<dimz; ++z){
-		for (int y=0; y<dimy; ++y){
-			for (int x=0; x<dimx; ++x){
-				Outputbuffer[z*dimx*dimy+y*dimx+x]=Image[(z+2)*(new_dimx*new_dimy)+(y+2)*new_dimx+(x+2)];
-			}
-		}
-	}
 	return ;
 }
 

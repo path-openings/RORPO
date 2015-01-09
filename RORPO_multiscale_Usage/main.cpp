@@ -64,7 +64,7 @@ void Call_RORPO(nifti_image* nim, std::string writing_path, std::vector<int> S_l
 
 	// ---------------------- Mask Image -----------------------------------
 		
-	Image<PixelType> Mask(I.Dimx(), I.Dimy(), I.Dimz());
+	Image<unsigned char> Mask(I.Dimx(), I.Dimy(), I.Dimz());
 
 	if (mask_path!="NULL") // A mask image is given
 	{
@@ -72,16 +72,18 @@ void Call_RORPO(nifti_image* nim, std::string writing_path, std::vector<int> S_l
 		// Reading the mask image
 		nifti_image *nim_mask=NULL;
 		nim_mask = nifti_image_read(mask_path.c_str(), 1);
-		int dimz=nim->nz;
-		int dimy=nim->ny;
-		int dimx=nim->nx;
+		int dimz=nim_mask->nz;
+		int dimy=nim_mask->ny;
+		int dimx=nim_mask->nx;
 		
 		if (dimx==I.Dimx() and dimy==I.Dimy() and dimz==I.Dimz()){
-			Mask.Add_data_from_pointer((PixelType*)(nim_mask->data));
+			Mask.Add_data_from_pointer((unsigned char*)(nim_mask->data));
 			//nifti_image_free(nim_mask);
 		}
 		else {
 			std::cerr<<"Error, size of the mask image is not the same as the size of the input image"<<std::endl;
+			std::cerr<<"Mask image: "<<dimx<<"x"<<dimy<<"x"<<dimz<<std::endl;
+			std::cerr<<"Input image : "<<I.Dimx()<<"x"<<I.Dimy()<<"x"<<I.Dimz()<<std::endl;
 		}
 	}
 	else // No mask is given
@@ -124,7 +126,7 @@ void Call_RORPO(nifti_image* nim, std::string writing_path, std::vector<int> S_l
 		}
 
 		// Run RORPO
-		Image<FastPixelType> Multiscale=RORPO_multiscale<FastPixelType>(Image_Char, S_list, nb_core, debug_flag, Mask);	
+		Image<FastPixelType> Multiscale=RORPO_multiscale<FastPixelType,unsigned char>(Image_Char, S_list, nb_core, debug_flag, Mask);	
 		
 		minmax = Multiscale.MinMax_value();
 		min_value = minmax[0];

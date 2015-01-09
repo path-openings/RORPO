@@ -45,6 +45,14 @@ class Image {
 		const T& operator ()(int x, int y, int z) const {
 			return m_vImage[x + y * m_nDimx + z * m_nDimx * m_nDimy];
 		}
+
+		T& operator ()(int i) {
+			return m_vImage[i];
+		}
+		const T& operator ()(int i) const {
+			return m_vImage[i];
+		}
+	
 	
 		const int Dimx() const {
 			return m_nDimx;
