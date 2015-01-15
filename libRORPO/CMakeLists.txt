@@ -14,5 +14,6 @@ set( SOURCES_RORPO_FILES
      ${PROJECT_SOURCE_DIR}/Pink/mccodimage.c
      ${PROJECT_SOURCE_DIR}/Pink/mcimage.c)	
 
-add_library(RORPO SHARED ${SOURCES_RORPO_FILES})
+set(RORPO_HEADER_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE FILEPATH "Directory to libRORPO headers" )
 
+add_library(RORPO SHARED ${SOURCES_RORPO_FILES})

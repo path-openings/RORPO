@@ -23,7 +23,7 @@ FIND_LIBRARY(NIFTI_LIB Nifti $ENV{NIFTI_LIB_PATH})
 
 set(NIFTI_HEADER_DIR  "" CACHE FILEPATH "Directory to libNifti headers" )
 if (NOT EXISTS "${NIFTI_HEADER_DIR}/nifti1.h")
-	message("Can't find libNifti headers in NIFTI_HEADER_DIR")
+    message(FATAL_ERROR "Can't find libNifti headers in NIFTI_HEADER_DIR")
 endif()
 
 include_directories (${NIFTI_HEADER_DIR}) 
@@ -32,7 +32,7 @@ FIND_LIBRARY(RORPO_LIB RORPO $ENV{RORPO_LIB_PATH})
 
 set(RORPO_HEADER_DIR  "" CACHE FILEPATH "Directory to libRORPO headers" )
 if (NOT EXISTS "${RORPO_HEADER_DIR}/Image.hpp")
-	message("Can't find libRORPO headers in RORPO_HEADER_DIR")
+    message(FATAL_ERROR "Can't find libRORPO headers in RORPO_HEADER_DIR")
 endif()
 include_directories (${RORPO_HEADER_DIR}) 
 include_directories (${RORPO_HEADER_DIR}/Pink)
@@ -42,6 +42,10 @@ set( SOURCES_FILES
 
 add_executable( ${PROJECT_NAME} ${SOURCES_FILES} ${PROJECT_SOURCE_DIR} )
 
-target_link_libraries( ${PROJECT_NAME} ${NIFTI_LIB} ${VTK_LIBRARIES} ${RORPO_LIB} )
+if(NIFTI_LIB AND RORPO_LIB)
+    target_link_libraries( ${PROJECT_NAME} ${NIFTI_LIB} ${VTK_LIBRARIES} ${RORPO_LIB} )
+else()
+    target_link_libraries( ${PROJECT_NAME} Nifti ${VTK_LIBRARIES} RORPO)
+endif()
 
 
