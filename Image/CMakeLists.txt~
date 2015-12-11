@@ -1,0 +1,12 @@
+project(Image)
+cmake_minimum_required(VERSION 2.8)
+
+#include_directories(
+#        ${PROJECT_SOURCE_DIR}/include)
+
+add_subdirectory(Nifti)
+
+# ADD FILES
+set(Image_HEADERS ./include/*.hpp)
+
+install( FILES ${Image_HEADERS} DESTINATION include/Image)

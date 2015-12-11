@@ -2,15 +2,13 @@
 
 WARNING :
 All images must have an isotropic image resolution (cubic voxels).
-Image intensities should be integers.
-
 
 ---------- File PO.hpp ----------
 
 PO_3D : 
 Compute the Path Opening operator in one orientation. The 7 orientations are defined in the function createNeighbourhood.
 
-	I : Input image
+	image : Input image
 	L : Path length
 	index_image : sorted index of the image. Result of the sort_image_value function of sorting.hpp 
 	orientations : defined the orientation used. Choices are [0,0,1] ; [1,0,0] ; [0,1,0] ; [1,1,1] ; [-1,1,1] ; [1,1,-1] ; [-1,1,-1]
@@ -22,7 +20,7 @@ Compute the Path Opening operator in one orientation. The 7 orientations are def
 RPO :
 Compute the 7 orientations of the Robust Path Opening and return them.
 
-	I : input image
+	image : input image
 	L : Path length
 	RPO1 : resulting Robust Path Opening in the first orientation.
 	RPO2 : resulting Robust Path Opening in the second orientation
@@ -37,7 +35,7 @@ Compute the 7 orientations of the Robust Path Opening and return them.
 ---------- File RORPO.hpp ----------
 Compute the Ranking Orientations Responses of Path Operators (RORPO)
 
-	I : input image
+	image : input image
 	L : Path length
 	nb_core : number of cores used to compute the Path Opening (choose between 1 and 7)
 	
@@ -45,7 +43,7 @@ Compute the Ranking Orientations Responses of Path Operators (RORPO)
 ---------- File RORPO_multiscale.hpp ----------
 Compute the multiscale RORPO
 
-	I : input image
+	image : input image
 	S_list : vector containing the different path length (scales)
 	nb_core : number of cores used to compute the Path Opening (choose between 1 and 7)
 	debug_flag : 1 (activated) or 0 (desactivated)

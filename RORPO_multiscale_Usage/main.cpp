@@ -1,491 +1,369 @@
 #include <stdlib.h>
+#include <stdint.h>
 #include <iostream>
 #include <string>
 #include <vector>
 #include <getopt.h>
 #include <typeinfo>
+#include <sstream>
 
-#include "Image.hpp"
-#include "RORPO_multiscale.hpp"
+#include "docopt.h"
+#include "Image/Image.hpp"
+#include "Image/Image_IO_nifti.hpp"
+#include "RORPO/RORPO_multiscale.hpp"
 
-typedef unsigned char FastPixelType;
 
-extern "C" {
-	#include "nifti1_io.h"
+// Split a string
+std::vector<std::string> split(std::string str, char delimiter) {
+  std::vector<std::string> internal;
+  std::stringstream ss(str); // Turn the string into a stream.
+  std::string tok;
+
+  while(getline(ss, tok, delimiter)) {
+    internal.push_back(tok);
+  }
+  return internal;
 }
 
-void usage()
-{
-	std::cout<<"RORPO parameters :"<<std::endl;
-	std::cout<<"--input (-i) : path to the .nii image. The image type can be uint8, short, int32 or float."<<std::endl;
-	std::cout<<"--output (-o) : path to write the resulting image."<<std::endl;
-	std::cout<<"--smin (-s) : Minimum path length (int)"<<std::endl;
-	std::cout<<"--factor (-f) : factor for the geometric sequence of scales; scale_(n+1)=factor*scale_(n) (float)"<<std::endl;
-	std::cout<<"--nb_scales (-n) : Number of scales (int)"<<std::endl;
-	
-	std::cout<<"--window (-w): (optional) Min and max values of the new intensity range of input image (2 int) \n"
-	<< "     Convert input image to uint8. Intensities inferior to window_min become 0, intensities superior to window_max become 255; Linear transformation between window_min and window_max"<<std::endl;
-	std::cout<<"--core (-c): (optional) nb of CPUs used for RPO computation (int)"<<std::endl;
-	std::cout<<"--mask or -m : (optional) path to a mask for the input image (0 for the background and 1 for the foreground). The image type must be uint8."<<std::endl;
-	std::cout<<"--debug : (optional) Activation of a debug mode."<<std::endl;
-	std::cout<<""<<std::endl;
-	std::cout<<"Usage Exemple : ./RORPO_multiscale --debug --input input_image.nii -output result.nii -s 30 -f 1.5 -n 2 --window 100 3250"<<std::endl;
-}
 
 template<typename PixelType>
-void Call_RORPO(nifti_image* nim, std::string writing_path, std::vector<int> S_list,  int window_min, int window_max, int nb_core, int debug_flag, std::string mask_path="NULL"){
+int RORPO_multiscale_usage(Image3D<PixelType> image,
+                std::string outputPath,
+                std::vector<int> scaleList,
+                std::vector<int> window,
+                int nbCores,
+                int verbose,
+                std::string maskPath)
+{
+    int dimz = image.Dimz();
+    int dimy = image.Dimy();
+    int dimx= image.Dimx();
 	
-	int dimz=nim->nz;
-	int dimy=nim->ny;
-	int dimx=nim->nx;
-	
-	Image<PixelType> I(dimx, dimy, dimz);
-	I.Add_data_from_pointer((PixelType*)(nim->data));
-	nifti_image_free(nim);
-	
-	if (debug_flag){
-		std::cout<<""<<std::endl;
-		std::cout << "------ INPUT IMAGE -------" << std::endl;
+    if (verbose){
 		std::cout<<"NIFTI Image"<<std::endl;
-		std::cout<<"dimx="<<dimx<<" ; dimy="<<dimy<<" ; dimz="<<dimz<<std::endl;
+        std::cout<<"dimx= "<<dimx<<"; dimy= "<<dimy<<"; dimz= "<<dimz<<std::endl;
 	}
 
-	// ---------- Find min and max value --------
+    // ------------------ Compute input image intensity range ------------------
 
-	std::vector<int>minmax = I.MinMax_value();
-	int min_value = minmax[0];
-	int max_value = minmax[1];
+    std::vector<PixelType> minmax = image.min_max_value();
 
-	if (debug_flag){
-		std::cout<<"Min intensity value : "<<min_value<<std::endl;
-		std::cout<<"Max intensity value : "<<max_value<<std::endl;
-		std::cout<<" "<<std::endl;
+    if (verbose){
+        std::cout<< "Image intensity range: "<< (float)minmax[0]<<", "
+                 << (float)minmax[1] << std::endl;
+        std::cout<<std::endl;
 	}
 
-	// ---------------------- Mask Image -----------------------------------
+    // -------------------------- mask Image -----------------------------------
 		
-	Image<unsigned char> Mask(I.Dimx(), I.Dimy(), I.Dimz());
+    Image3D<unsigned char> mask;
 
-	if (mask_path!="NULL") // A mask image is given
+    if (!maskPath.empty()) // A mask image is given
 	{
-		
-		// Reading the mask image
-		nifti_image *nim_mask=NULL;
-		nim_mask = nifti_image_read(mask_path.c_str(), 1);
-		int dimz=nim_mask->nz;
-		int dimy=nim_mask->ny;
-		int dimx=nim_mask->nx;
-		
-		if (dimx==I.Dimx() and dimy==I.Dimy() and dimz==I.Dimz()){
-			Mask.Add_data_from_pointer((unsigned char*)(nim_mask->data));
-			//nifti_image_free(nim_mask);
-		}
-		else {
-			std::cerr<<"Error, size of the mask image is not the same as the size of the input image"<<std::endl;
-			std::cerr<<"Mask image: "<<dimx<<"x"<<dimy<<"x"<<dimz<<std::endl;
-			std::cerr<<"Input image : "<<I.Dimx()<<"x"<<I.Dimy()<<"x"<<I.Dimz()<<std::endl;
-		}
-	}
-	else // No mask is given
-	{
-		Mask.ClearImage();
-	}
-	
+        mask = read_3D_nifti_image<uint8_t>(maskPath);
 
-	// ############################# WINDOW IMAGE and CHAR CONVERSION  ##############################
+        if (mask.Dimx() != dimx || mask.Dimy() != dimy || mask.Dimz() != dimz){
+            std::cerr<<"Size of the mask image (dimx= "<<mask.Dimx()
+                    <<" dimy= "<<mask.Dimy()<<" dimz="<<mask.Dimz()
+                   << ") is different from size of the input image"<<std::endl;
+            return 1;
+        }
+    }
 
-	// --------------- Convert the InputType input image to FastPixelType image and rescale it between window_min and window_max -----------
-	if (window_min!=-1 and window_max!=-1)
-	{
-		if (min_value>window_min)
-			window_min=min_value;
+    // #################### Convert input image to char #######################
 
-		if (max_value<window_max)
-			window_max=max_value; 
+    if (window[2] == 1 || typeid(PixelType) == typeid(float) ||
+            typeid(PixelType) == typeid(double)){
 
-		if(debug_flag){
-			std::cout<<"Dynamic Changement"<<std::endl;
-			std::cout<<"New image intensity range :"<<std::endl;
-			std::cout<<"["<<window_min << " ; " << window_max<<"] converted in char [0,255]"<<std::endl;
-			std::cout<<""<<std::endl;
-		}
+        if (window[2] == 1) { // window the intensity range to [0,255]
+            if (minmax[0] > (PixelType) window[0])
+                window[0] = minmax[0];
 
-		I.Window_Dynamic(window_min, window_max);
-		Image<FastPixelType> Image_Char=I.Copy_image_2_uchar();
-		I.ClearImage();
-		
-		minmax = Image_Char.MinMax_value();
-		min_value = minmax[0];
-		max_value = minmax[1];
+            if (minmax[1] < (PixelType) window[1])
+                window[1] = minmax[1];
 
-		if (debug_flag){
-			std::cout<<"Image_Char : "<<std::endl;
-			std::cout<<"Min intensity value : "<<min_value<<std::endl;
-			std::cout<<"Max intensity value : "<<max_value<<std::endl;
-			std::cout<<" "<<std::endl;
-		}
+            image.window_dynamic(window[0], window[1]);
 
-		// Run RORPO
-		Image<FastPixelType> Multiscale=RORPO_multiscale<FastPixelType,unsigned char>(Image_Char, S_list, nb_core, debug_flag, Mask);	
-		
-		minmax = Multiscale.MinMax_value();
-		min_value = minmax[0];
-		max_value = minmax[1];
+            if(verbose){
+                std::cout<<"Convert image intensity range from: [";
+                std::cout<<window[0]<<", "<<window[1]<<"] to [";
+                std::cout<<"0"<<", "<<"255"<<"]"<<std::endl;
+            }
+        }
 
-		if (debug_flag){
-			std::cout<<"Multiscale: "<<std::endl;
-			std::cout<<"Min intensity value : "<<min_value<<std::endl;
-			std::cout<<"Max intensity value : "<<max_value<<std::endl;
-			std::cout<<" "<<std::endl;
-		}
+        else{ // convert the full intensity range to [0,255]
+            image.window_dynamic(minmax[0], minmax[1]);
+            if(verbose){
+                std::cout<<"Convert image intensity range from: [";
+                std::cout<<minmax[0]<<", "<<minmax[1]<<"] to [";
+                std::cout<<"0"<<", "<<"255"<<"]"<<std::endl;
+            }
+        }
 
-		// Write the result in nifti
-		int t[8] = {3, Multiscale.Dimx(), Multiscale.Dimy(), Multiscale.Dimz(), 0,0,0,0};
-		nifti_image *nim_write = nifti_make_new_nim(t, 2, 1);
-		nim_write->data = Multiscale.GetPointer();
-		int test=nifti_set_filenames(nim_write, writing_path.c_str(), 0, nim_write->byteorder);
-		nifti_image_write(nim_write);
-		//nifti_image_free(nim_write);
-	
-	}
-	
-	// ############################# CONVERSION from FLOAT to CHAR ##############################
-	
-	else if (typeid(PixelType)==typeid(float))
-	{
-			
-		if(debug_flag){
-			std::cout<<"Conversion from float to unsigned char"<<std::endl;
-			std::cout<<"New dynamic range : [0 ; 255]"<<std::endl;
-		}
-		
-		I.Window_Dynamic(min_value, max_value);
-		Image<FastPixelType> Image_Char=I.Copy_image_2_uchar();
-		I.ClearImage();
-		
-		// Run RORPO
-		Image<FastPixelType> Multiscale=RORPO_multiscale<FastPixelType>(Image_Char, S_list, nb_core, debug_flag, Mask);	
+        minmax = image.min_max_value();
+        Image3D<uint8_t>imageChar= image.copy_image_2_uchar();
 
-		// Write the result in nifti
-		int t[8] = {3, Multiscale.Dimx(), Multiscale.Dimy(), Multiscale.Dimz(), 0,0,0,0};
-		nifti_image *nim_write = nifti_make_new_nim(t, 2, 1);
-		nim_write->data = Multiscale.GetPointer();
-		int test=nifti_set_filenames(nim_write, writing_path.c_str(), 0, nim_write->byteorder);
-		nifti_image_write(nim_write);
-		//nifti_image_free(nim_write);
-	}
-	
-	// ############################# Image intensities non positives ##############################
-	
-		else if (min_value <0){
-	
-			if(debug_flag){
-				std::cout<<"Minimum image intensity is smaller than 0"<<std::endl;
-				std::cout<<"New image intensity range :"<<std::endl;
-				std::cout<<"["<< 0 << " ; " << max_value<<std::endl;
-			}
-			I.Turn_Positive(min_value, max_value);
-			
-			// Run RORPO
-			Image<PixelType> Multiscale=RORPO_multiscale<PixelType>(I,  S_list, nb_core, debug_flag, Mask);	
-			
-			// Write the result in nifti
-			int t[8] = {3, Multiscale.Dimx(), Multiscale.Dimy(), Multiscale.Dimz(), 0,0,0,0};
-			nifti_image *nim_write;
-			if (typeid(PixelType)==typeid(short)){
-				nim_write = nifti_make_new_nim(t, 4, 1);
-			}
-			if (typeid(PixelType)==typeid(int32_t)){
-				nim_write = nifti_make_new_nim(t, 8, 1);
-			}
-			if (typeid(PixelType)==typeid(float)){
-				nim_write = nifti_make_new_nim(t, 16, 1);
-			}
-			nim_write->data = Multiscale.GetPointer();
-			int test=nifti_set_filenames(nim_write, writing_path.c_str(), 0, nim_write->byteorder);
-			nifti_image_write(nim_write);
-			//nifti_image_free(nim_write);
-		}
-	
-	// ############################# ELSE ##############################
+        if(verbose)
+            std::cout<<"Convert image to uint8"<<std::endl;
 
-	else {
+        // Run RORPO multiscale
+        Image3D<uint8_t> multiscale=
+                RORPO_multiscale<uint8_t, uint8_t>(imageChar,
+                                                   scaleList,
+                                                   nbCores,
+                                                   verbose,
+                                                   mask);
 
-		// Run RORPO
-		Image<PixelType> Multiscale = RORPO_multiscale<PixelType>(I, S_list, nb_core, debug_flag, Mask);		
+        // Write the result to nifti image
+        write_3D_nifti_image<uint8_t>(multiscale, outputPath);
+    }
 
-		
-		// Write the result in nifti
-		int t[8] = {3, Multiscale.Dimx(), Multiscale.Dimy(), Multiscale.Dimz(), 0,0,0,0};
-		nifti_image *nim_write;
-		if (typeid(PixelType)==typeid(short)){
-			nim_write = nifti_make_new_nim(t, 4, 1);
-		}
-		if (typeid(PixelType)==typeid(unsigned short)){
-			nim_write = nifti_make_new_nim(t, 512, 1);
-		}
-		if (typeid(PixelType)==typeid(unsigned char)){
-			nim_write = nifti_make_new_nim(t, 2, 1);
-		}
-		if (typeid(PixelType)==typeid(int32_t)){
-			nim_write = nifti_make_new_nim(t, 8, 1);
-		}
-		if (typeid(PixelType)==typeid(float)){
-			nim_write = nifti_make_new_nim(t, 16, 1);
-		}
-		nim_write->data = Multiscale.GetPointer();
-		int test=nifti_set_filenames(nim_write, writing_path.c_str(), 0, nim_write->byteorder);
-		nifti_image_write(nim_write);
-		//nifti_image_free(nim_write);
+    // ################## Keep input image in PixelType ########################
 
-	}
-}
+    else {
+
+        // ------------------------ Negative intensities -----------------------
+
+        if (minmax[0] < 0){
+            image - minmax[0];
+
+            if(verbose){
+                std::cout<<"Convert image intensity range from [";
+                std::cout<<minmax[0]<<", "<<minmax[1]<<"] to [";
+                std::cout<<"0"<<", "<<minmax[1] - minmax[0]<<"]"<<std::endl;
+            }
+            minmax = image.min_max_value();
+        }
+
+        // Run RORPO multiscale
+        Image3D<PixelType> multiscale=
+                RORPO_multiscale<PixelType, uint8_t>(image,
+                                                              scaleList,
+                                                              nbCores,
+                                                              verbose,
+                                                              mask);
+
+        // Write the result to nifti image
+        write_3D_nifti_image<PixelType>(multiscale, outputPath);
+
+    }
+
+    return 0;
+} // RORPO_multiscale_usage
 
 
+// Parse command line with docopt
+static const char USAGE[] =
+R"(RORPO_multiscale_usage.
+
+    USAGE:
+    RORPO_multiscale_usage <imagePath> <outputPath> <scaleMin> <factor> <nbScales> [--window=min,max] [--core=nbCores] [--mask=maskPath] [--verbose]
+
+    Options:
+         --core=<nbCores>  Number of CPUs used for RPO computation
+         --window=min,max     Convert intensity range [min, max] of the intput \
+                              image to [0,255] and convert to uint8 image\
+                              (strongly decrease computation time).
+         --mask=maskPath      Path to a mask for the input image \
+                              (0 for the background; not 0 for the foreground).\
+                              mask image type must be uint8.
+         --verbose            Activation of a verbose mode.
+        )";
 
 
 int main(int argc, char **argv)
 {
 
-	// ------------------------ Parameters -----------------------------
-	std::string mask_path="NULL";
-	std::string image_path="-1";
-	float Smin=-1;
-	float factor=-1;
-	int nb_scales=-1;
-	float window_min=-1;
-	float window_max=-1;
-	std::string writing_path="-1";
-	int nb_core=1;
-	int debug_flag=0;
-	int binmask_flag=0;
+    // -------------- Parse arguments and initialize parameters ----------------
+    std::map<std::string, docopt::value> args = docopt::docopt(USAGE,
+                                                  {argv + 1, argv + argc},
+                                                  true,
+                                                  "RORPO_multiscale_usage 2.0");
 
-	std::cout << " " << std::endl;
-	std::cout << "------ PARAMETERS -------" << std::endl;
-	std::cout << " " << std::endl;
-	// Optional arguments
-	int a;
- 	while (1)
-    {
-       static struct option long_options[] =
-         {
-           {"input",required_argument,0,'i'},
-           {"output",required_argument,0,'o'},
-           {"smin",required_argument,0,'s'},
-           {"factor",required_argument,0,'f'},
-           {"nb_scales",required_argument,0,'n'},  
-           
-           //OPTIONAL
-           {"debug", no_argument, &debug_flag, 1}, //flag
-           {"mask",required_argument,0,'m'},
-           {"window",required_argument,0,'w'},
-           {"core",required_argument,0,'c'},
-           {0, 0, 0, 0}
-         };
-         
-       int option_index = 0;
-       a = getopt_long (argc,
-       				    argv,
-       				    "i:o:s:f:n:dm:w:c:",
-       				    long_options,
-       				    &option_index);
+    std::cout<<" "<<std::endl;
+    std::cout<<"Parameters: "<<std::endl;
+    for(auto const& arg : args) {
+        std::cout << arg.first << ": " << arg.second << std::endl;
+    }
 
-       /* Detect the end of the options. */
-       
-       if (a == -1)
-         break;
+    std::string imagePath = args["<imagePath>"].asString();
+    std::string outputPath = args["<outputPath>"].asString();
+    float scaleMin = std::stoi(args["<scaleMin>"].asString());
+    float factor = std::stof(args["<factor>"].asString());
+    int nbScales = std::stoi(args["<nbScales>"].asString());
+    std::vector<int> window(3);
+    int nbCores = 1;
+    std::string maskPath;
+    bool verbose = args["--verbose"].asBool();
 
- 	   switch (a)
- 	   {
- 	   	case 0: //flag
+    if (args["--mask"])
+        maskPath = args["--mask"].asString();
+
+    if (args["--core"])
+        nbCores = std::stoi(args["--core"].asString());
+
+    if (args["--window"]){
+        std::vector<std::string> windowVector =
+                split(args["--window"].asString(),',');
+
+        window[0] = std::stoi(windowVector[0]);
+        window[1] = std::stoi(windowVector[1]);
+        window[2] = 1; // --window used
+    }
+    else
+        window[2] = 0; // --window not used
+
+
+    // -------------------------- Scales computation ---------------------------
+
+    std::vector<int> scaleList(nbScales);
+    scaleList[0] = scaleMin;
+
+    for (int i = 1; i < nbScales; ++i)
+        scaleList[i] = int(scaleMin * pow(factor, i));
+
+    if (verbose){
+        std::cout<<"Scales : ";
+        std::cout<<scaleList[0];
+        for (int i = 1; i < nbScales; ++i)
+            std::cout<<','<<scaleList[i];
+    }
+
+    // -------------------------- Read Nifti Image -----------------------------
+    nifti_image *nim = NULL;
+    nim = nifti_image_read(imagePath.c_str(), 1);
+
+    // ---------------- Find image type and run RORPO multiscale ---------------
+    int error;
+    if (verbose){
+        std::cout<<" "<<std::endl;
+        std::cout << "------ INPUT IMAGE -------" << std::endl;
+    }
+
+    switch(nim->datatype){
+        case 2: { // uint8
+            if (verbose)
+                std::cout<<"Input image type: uint8"<<std::endl;
+
+            Image3D<uint8_t> image = read_3D_nifti_image<uint8_t>(nim);
+            nifti_image_free(nim);
+
+            error = RORPO_multiscale_usage<uint8_t>(image,
+                                                    outputPath,
+                                                    scaleList,
+                                                    window,
+                                                    nbCores,
+                                                    verbose,
+                                                    maskPath);
             break;
+    }
 
-		case 'i':
-        	image_path=optarg;
-        	std::cout << "image_path= " <<  optarg<<std::endl;
-         	break;
-         	
-		case 'o':
-        	writing_path=optarg;
-        	std::cout << "writing_path= " << optarg<<std::endl;
-         	break;   
-         	
-		case 's':
-        	Smin=atof(optarg);
-        	std::cout << "Smin= " << optarg<<std::endl;
-         	break;
-         	
-		case 'f':
-        	factor=atof(optarg);
-        	std::cout << "factor= " <<optarg<<std::endl;
-         	break;      
+        case 4: { // uint16
+            if (verbose)
+                std::cout<<"Input image type: uint16 "<<std::endl;
 
-		case 'n':
-        	nb_scales=atoi(optarg);
-        	std::cout << "nb_scales= " << optarg<<std::endl;
-         	break;        	
-     
-		case 'm':
-        	mask_path=optarg;
-        	std::cout << "mask_path= " << optarg<<std::endl;
-         	break;
+            Image3D<u_int16_t> image = read_3D_nifti_image<u_int16_t>(nim);
+            nifti_image_free(nim);
 
-		case 'c':
-        	nb_core=atoi(optarg);
-        	std::cout << "nb_core " << optarg<<std::endl;
-         	break;
-         	
-         case 'w':
-         	window_min=atoi(argv[optind-1]);
-         	window_max=atoi(argv[optind]);
-         	std::cout << "window min= " << argv[optind-1]<<std::endl;
-         	std::cout << "window max= " << argv[optind]<<std::endl;
-		}
-	}
-	
-	
-	// --------------- Test parameters validity -----------------        	
-   if (image_path=="-1")
-	{
-		std::cout<<" "<<std::endl;
-		std::cout<<" ********* Error with image path ********"<<std::endl;
-		std::cout<<" "<<std::endl;
-		usage();
-		return 0;
-	}
-	else if (writing_path=="-1")
-	{
-		std::cout<<" "<<std::endl;
-		std::cout<<" ********* Error with writing path *********"<<std::endl;
-		std::cout<<" "<<std::endl;
-		usage();
-		return 0;
-	}
-	
-	if (Smin==-1)
-	{
-		std::cout<<" "<<std::endl;
-		std::cout<<" ********* Error with Smin ********"<<std::endl;
-		std::cout<<" "<<std::endl;
-		usage();
-		return 0;
-	}
-	
-	if (factor==-1)
-	{
-		std::cout<<" "<<std::endl;
-		std::cout<<" ********* Error with factor ********"<<std::endl;
-		std::cout<<" "<<std::endl;
-		usage();
-		return 0;
-	}
-	
-	if (nb_scales==-1)
-	{
-		std::cout<<" "<<std::endl;
-		std::cout<<" ********* Error with nb_scales ********"<<std::endl;
-		std::cout<<" "<<std::endl;
-		usage();
-		return 0;
-	}
-		
-	else // Program can be run
-	{
-         
-     	// ################################# Scales Computations ###################################
-		
-		std::vector<int> S_list(nb_scales);
-		S_list[0]=Smin;
+            error = RORPO_multiscale_usage<u_int16_t>(image,
+                                                      outputPath,
+                                                      scaleList,
+                                                      window,
+                                                      nbCores,
+                                                      verbose,
+                                                      maskPath);
+            break;
+        }
 
-		if (debug_flag){
-			std::cout<<"Scales : ";
-			std::cout<<S_list[0]<< " ";
-		}
-				
-		for (int i=1; i<nb_scales;++i)
-		{
-			S_list[i]=int(Smin*pow(factor,i));
-			if (debug_flag){
-				std::cout<<S_list[i]<< " ";
-				
-			}
-		}
-		std::cout<<std::endl;
-		
-		/*for (int i=1; i<nb_scales-1;i++)
-		{
-		    S_list[i]=Smin+i*((factor-Smin)/(nb_scales-1));
-		    std::cout<<S_list[i]<< " ";
-		}
-		S_list[nb_scales-1]=factor;
-		std::cout<<factor<< " ";*/
-		
-		// #######################################################################################      
-		// ################################# Reading Image #######################################
-		// #######################################################################################
-		
-		int image_size;
+        case 8: { // uint32
+            if (verbose)
+                std::cout<<"Input image type: int32 "<<std::endl;
 
-		// ------------ Reading Nifti Image -------------------
-		nifti_image *nim=NULL;
-		nim = nifti_image_read(image_path.c_str(), 1);
-		switch(nim->datatype){
-	
-			case 2: {
-				if (debug_flag){
-					std::cout<<"Input image type : Unsigned Char "<<std::endl;
-				}
-				Call_RORPO<unsigned char>(nim, writing_path, S_list, window_min, window_max, nb_core, debug_flag, mask_path);
-				break;
-			}
-			case 4: {
-				if (debug_flag){
-					std::cout<<"Input image type : Short "<<std::endl;
-				}
-				Call_RORPO<short>(nim, writing_path, S_list, window_min, window_max, nb_core, debug_flag, mask_path);
-				break;
-			}
-			case 8: {
-				if (debug_flag){
-					std::cout<<"Input image type : Long "<<std::endl;
-				}
-				Call_RORPO<long>(nim, writing_path,  S_list, window_min, window_max, nb_core, debug_flag, mask_path);
-				break;
-			}
-			case 16: {
-				if (debug_flag){
-					std::cout<<"Input image type : Float "<<std::endl;		
-				}
-				Call_RORPO<float>(nim, writing_path, S_list, window_min, window_max, nb_core, debug_flag, mask_path);
-				break;
-			}
-			case 256: {
-				if (debug_flag){
-					std::cout<<"Input image type : Char "<<std::endl;
-				}
-				Call_RORPO<char>(nim, writing_path, S_list, window_min, window_max, nb_core, debug_flag, mask_path);
-				break;
-			}
-			case 512: {
-				if (debug_flag){
-					std::cout<<"Input image type : Unsigned Short "<<std::endl;
-				}
-				Call_RORPO<unsigned short>(nim, writing_path, S_list, window_min, window_max, nb_core, debug_flag, mask_path);
-				break;
-			}
-			case 768: {
-				if (debug_flag){
-					std::cout<<"Input image type : Unsigned long "<<std::endl;
-				}
-				Call_RORPO<unsigned long>(nim, writing_path, S_list, window_min, window_max, nb_core, debug_flag, mask_path);
-				break;
-			}
-			default : {
-				std::cout<<"Input image type not supported "<<std::endl;		
-				break;
-			}
-		}
-	}
-	return 1;
+            Image3D<int32_t> image = read_3D_nifti_image<int32_t>(nim);
+            nifti_image_free(nim);
+
+            error = RORPO_multiscale_usage<int32_t>(image,
+                                                    outputPath,
+                                                    scaleList,
+                                                    window,
+                                                    nbCores,
+                                                    verbose,
+                                                    maskPath);
+            break;
+        }
+
+        case 16: { // float
+            if (verbose)
+                std::cout<<"Input image type: float "<<std::endl;
+
+            Image3D<float_t> image = read_3D_nifti_image<float_t>(nim);
+            nifti_image_free(nim);
+
+            error = RORPO_multiscale_usage<float_t>(image,
+                                                    outputPath,
+                                                    scaleList,
+                                                    window,
+                                                    nbCores,
+                                                    verbose,
+                                                    maskPath);
+            break;
+        }
+        case 256: { // int8
+            if (verbose)
+                std::cout<<"Input image type: int8 "<<std::endl;
+
+            Image3D<int8_t> image = read_3D_nifti_image<int8_t>(nim);
+            nifti_image_free(nim);
+
+            error = RORPO_multiscale_usage<int8_t>(image,
+                                                   outputPath,
+                                                   scaleList,
+                                                   window,
+                                                   nbCores,
+                                                   verbose,
+                                                   maskPath);
+            break;
+        }
+        case 512: { // int16
+            if (verbose)
+                std::cout<<"Input image type: int16 "<<std::endl;
+
+            Image3D<int16_t> image = read_3D_nifti_image<int16_t>(nim);
+            nifti_image_free(nim);
+
+            error = RORPO_multiscale_usage<int16_t>(image,
+                                                    outputPath,
+                                                    scaleList,
+                                                    window,
+                                                    nbCores,
+                                                    verbose,
+                                                    maskPath);
+            break;
+        }
+        case 768: { // uint32
+            if (verbose)
+                std::cout<<"Input image type: uint32 "<<std::endl;
+
+            Image3D<uint32_t> image = read_3D_nifti_image<uint32_t>(nim);
+            nifti_image_free(nim);
+
+            error = RORPO_multiscale_usage<uint32_t>(image,
+                                                     outputPath,
+                                                     scaleList,
+                                                     window,
+                                                     nbCores,
+                                                     verbose,
+                                                     maskPath);
+            break;
+        }
+        default : {
+            std::cerr<<"Input image type not supported "<<std::endl;
+            error = 1;
+            break;
+        }
+    } //end switch
+
+    return error;
+
 }//end main
 
