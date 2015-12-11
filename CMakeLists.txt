@@ -24,6 +24,4 @@ include_directories(
 add_subdirectory(Image)
 add_subdirectory(libRORPO)
 add_subdirectory(docopt.cpp)
-add_subdirectory(RPO_usage)
-add_subdirectory(RPO_multiscale)
 add_subdirectory(RORPO_multiscale_Usage)
