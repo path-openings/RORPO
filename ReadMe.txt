@@ -50,6 +50,3 @@ Compute the multiscale RORPO
 	Mask : optional mask image
 	
 
-
-	
-
