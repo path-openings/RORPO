@@ -31,7 +31,9 @@ file(GLOB_RECURSE HEADER_FILES *.hpp *.h)
 file(GLOB_RECURSE SOURCE_FILES *.cpp)
 
 add_executable( ${PROJECT_NAME} ${SOURCE_FILES})
-target_link_libraries( ${PROJECT_NAME} ${NIFTI_LIB} ${RORPO_LIB} ${DOCOPT_LIB})
+target_link_libraries( ${PROJECT_NAME} Nifti RORPO docopt )
+
+install( TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin/ )
 
 #if(NIFTI_LIB AND RORPO_LIB)
 #    target_link_libraries( ${PROJECT_NAME} ${NIFTI_LIB} ${VTK_LIBRARIES} ${RORPO_LIB} )
