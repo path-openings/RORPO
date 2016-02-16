@@ -88,19 +88,6 @@ class Image2D {
             return m_vImage.data();
         }
 
-        // Return a new image "bordered_image" which is the self image with a "border"-pixel border
-        //        const Image2D Add_border(int border, int value=0) const {
-
-        //            Image2D bordered_image(m_nDimx + 2 * border, m_nDimy + 2 * border, border, value);
-        //            for (int y=0; y<m_nDimy; ++y){
-        //                for (int x=0; x<m_nDimx; ++x){
-
-        //                    bordered_image(x + border, y + border)=m_vImage[x + y * m_nDimx];
-        //                }
-        //            }
-        //            return bordered_image;
-        //        }
-
         // Fill the image with data pointed by p_Pointer
         void add_data_from_pointer(T* p_Pointer){
             for (int y=0; y<m_nDimy; ++y){
@@ -116,152 +103,6 @@ class Image2D {
             m_nImageSize=0;
 
         }
-
-//        // Return a new image "bordered_image" which is the self image with a "border"-pixel border
-//        const Image2D Add_border(int border, int value=0) const {
-
-//            Image2D bordered_image(m_nDimx + 2 * border, m_nDimy + 2 * border, border, value);
-//            for (int y=0; y<m_nDimy; ++y){
-//                for (int x=0; x<m_nDimx; ++x){
-
-//                    bordered_image(x + border, y + border)=m_vImage[x + y * m_nDimx];
-//                }
-//            }
-//            return bordered_image;
-//        }
-
-//        // Return a new image "bordered_image" which is the self image with a "border"-pixel border
-//        void Remove_border(int border) {
-
-//            int ind=0;
-//            for (int y = border; y<m_nDimy - border; ++y){
-//                for (int x = border; x<m_nDimx - border; ++x){
-//                    m_vImage[ind]=m_vImage[x + y * m_nDimx];
-//                    ind++;
-//                }
-//            }
-//            m_nBorder = 0;
-//            m_nDimx = m_nDimx - 2 * border;
-//            m_nDimy = m_nDimy - 2 * border;
-//            m_nImageSize = m_nDimx * m_nDimy;
-//            m_vImage.resize(m_nImageSize);
-//        }
-
-//    // return a new image which is the copy of this
-//    const Image2D<unsigned char> Copy_image_2_uchar() const {
-
-//        Image2D<unsigned char> copy(m_nDimx , m_nDimy);
-//        for (int y=0; y<m_nDimy; ++y){
-//            for (int x=0; x<m_nDimx; ++x){
-//                copy(x, y) = (unsigned char) m_vImage[x + y * m_nDimx];
-//            }
-//        }
-//        return copy;
-//    }
-
-//    // return a new image which is the copy of this
-//    const Image2D Copy_image() const {
-
-//        Image2D copy(m_nDimx , m_nDimy);
-//        copy.GetData() = m_vImage;
-//        return copy;
-//    }
-
-//    // Copy I into this
-//    void Copy_image(Image2D &I) {
-//        if (I.ImageSize() != m_nImageSize)
-//        {
-//            m_vImage.resize(I.ImageSize());
-//            m_vImage=I.GetData();
-//            m_nBorder = I.GetBorder();
-//            m_nDimx = I.Dimx();
-//            m_nDimy = I.Dimy();
-//            m_nImageSize = I.ImageSize();
-//        }
-//        else {
-//            m_vImage=I.GetData();
-//        }
-
-//    }
-
-
-//    // Return the maximum value of this
-//    int Min_value(){
-//        int min = m_vImage[0];
-//        for (int y=0; y<m_nDimy; ++y){
-//            for (int x=0; x<m_nDimx; ++x){
-//                if (m_vImage[x + y * m_nDimx] < min){
-//                    min = m_vImage[x + y * m_nDimx];
-//                }
-//            }
-//        }
-//        return min;
-//    }
-
-
-//    // Return the maximum value of this
-//    int Max_value(){
-//        int max = m_vImage[0];
-//        for (int y=0; y<m_nDimy; ++y){
-//            for (int x=0; x<m_nDimx; ++x){
-//                if (m_vImage[x + y * m_nDimx] > max){
-//                    max = m_vImage[x + y * m_nDimx];
-//                }
-//            }
-//        }
-//        return max;
-//    }
-
-//    // Return the minimum and maximum value of this
-//    std::vector<int> MinMax_value(){
-//        std::vector<int> minmax(2);
-//        minmax[0] = m_vImage[0];
-//        minmax[1] = m_vImage[0];
-//        for (int y=0; y<m_nDimy; ++y){
-//            for (int x=0; x<m_nDimx; ++x){
-//                if (m_vImage[x + y * m_nDimx] > minmax[1]){
-//                    minmax[1] = m_vImage[x + y * m_nDimx];
-//                }
-//                if (m_vImage[x + y * m_nDimx] < minmax[0]){
-//                    minmax[0] = m_vImage[x + y * m_nDimx];
-//                }
-//            }
-//        }
-//        return minmax;
-//    }
-
-//    // Change the dynamique of image this, from [window_min, window_max] to [0, 255]. Intensities smaller than window_min are set to 0 and larger than window_max are set to 255
-//    void window_dynamic(int window_min, int window_max){
-
-//        for (int y=0; y<m_nDimy; ++y){
-//            for (int x=0; x<m_nDimx; ++x){
-
-//                if (m_vImage[x + y * m_nDimx] <= window_min){
-//                    m_vImage[x + y * m_nDimx] = 0;
-//                    }
-//                else if (m_vImage[x + y * m_nDimx] > window_max){
-//                     m_vImage[x + y * m_nDimx] = 255;
-
-//                     }
-//                else {
-//                    m_vImage[x + y * m_nDimx] = (T)(255 * ((m_vImage[x + y * m_nDimx] - (float)window_min) / (window_max - window_min)));
-//                    }
-//            }
-//        }
-//    }
-
-//// Change  the dynamique of image this from [min_value, max_value] to [ 0 , max_value]
-//    void Turn_Positive(int min_value, int max_value){
-
-//        for (int y=0; y<m_nDimy; ++y){
-//            for (int x=0; x<m_nDimx; ++x){
-
-//                m_vImage[x + y * m_nDimx] = (T)(max_value * ((m_vImage[x + y * m_nDimx] - (float) min_value) / (max_value - min_value)));
-
-//            }
-//        }
-//    }
-
 
 
     private :
@@ -550,8 +391,8 @@ class Image3D {
 	
 };
 
-template<typename T>
-void operator +(Image3D<T> &image, auto scalar){
+template<typename T1, typename T2>
+void operator +(Image3D<T1> &image, T2 scalar){
     for (int z = 0; z < image.Dimz(); ++z){
         for (int y = 0; y < image.Dimy(); ++y){
             for (int x = 0; x < image.Dimx(); ++x){
@@ -562,8 +403,8 @@ void operator +(Image3D<T> &image, auto scalar){
 
 }
 
-template<typename T>
-void operator -(Image3D<T> &image, auto scalar){
+template<typename T1, typename T2 >
+void operator -(Image3D<T1> &image, T2 scalar){
     for (int z = 0; z < image.Dimz(); ++z){
         for (int y = 0; y < image.Dimy(); ++y){
             for (int x = 0; x < image.Dimx(); ++x){
