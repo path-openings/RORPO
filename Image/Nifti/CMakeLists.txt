@@ -10,8 +10,9 @@ set( NIFTI_HEADERS
         ${PROJECT_SOURCE_DIR}/include/nifti/nifti1_io.h
 	${PROJECT_SOURCE_DIR}/include/nifti/znzlib.h)
 
-add_library(Nifti SHARED ${NIFTI_SOURCES})
+add_library(Nifti ${LIB_TYPE} ${NIFTI_SOURCES})
 
-install( FILES ${NIFTI_HEADERS} DESTINATION include/nifti)
-install( TARGETS Nifti DESTINATION lib)
+
+install( FILES ${NIFTI_HEADERS} DESTINATION include/Nifti)
+install( TARGETS Nifti DESTINATION ${CMAKE_BINARY_DIR}/lib)
 

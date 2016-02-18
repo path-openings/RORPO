@@ -11,6 +11,8 @@
 #include "Image/Image_IO_nifti.hpp"
 #include "RORPO/RORPO_multiscale.hpp"
 
+typedef uint16_t u_int16_t;
+
 
 // Split a string
 std::vector<std::string> split(std::string str, char delimiter) {

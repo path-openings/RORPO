@@ -258,13 +258,13 @@ void propagate(IndexType p, std::vector<int>&lambda, std::vector<int>&nf,
 	std::vector<int>::iterator it;
 	for (it=nf.begin(); it!=nf.end();++it)
 	{
-		if ((p+*it)<lambda.size() and b[p+*it])
+		if ((p+*it)<lambda.size() && b[p+*it])
 		{
 			Qq.push(p+*it);
 		}
 	}
 
-	while (not Qq.empty())
+	while (! Qq.empty())
 	{
 		IndexType q=Qq.front();
 		Qq.pop();
@@ -324,7 +324,7 @@ void PO_3D(Image3D<T> &image,
 			propagate<T>(*it, Lm, np, nm, b, Qc);
 			propagate<T>(*it, Lp, nm, np, b, Qc);
 
-			while (not Qc.empty())
+			while (! Qc.empty())
 			{
 				IndexType q = Qc.front();
 				Qc.pop();
