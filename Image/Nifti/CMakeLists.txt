@@ -15,4 +15,5 @@ add_library(Nifti ${LIB_TYPE} ${NIFTI_SOURCES})
 
 install( FILES ${NIFTI_HEADERS} DESTINATION include/Nifti)
 install( TARGETS Nifti DESTINATION ${CMAKE_BINARY_DIR}/lib)
+install( TARGETS Nifti LIBRARY DESTINATION lib)
 
