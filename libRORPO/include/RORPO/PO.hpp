@@ -1,30 +1,42 @@
-#ifndef PO_INCLUDED
-#define PO_INCLUDED
-
 /* Copyright (C) 2014 Odyssee Merveille
- 
-This file is part of libRORPO
+odyssee.merveille@gmail.com
 
-    libRORPO is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+    This software is a computer program whose purpose is to compute RORPO.
+    This software is governed by the CeCILL-B license under French law and
+    abiding by the rules of distribution of free software.  You can  use,
+    modify and/ or redistribute the software under the terms of the CeCILL-B
+    license as circulated by CEA, CNRS and INRIA at the following URL
+    "http://www.cecill.info".
 
-    libRORPO is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    As a counterpart to the access to the source code and  rights to copy,
+    modify and redistribute granted by the license, users are provided only
+    with a limited warranty  and the software's author,  the holder of the
+    economic rights,  and the successive licensors  have only  limited
+    liability.
 
-    You should have received a copy of the GNU General Public License
-    along with libRORPO.  If not, see <http://www.gnu.org/licenses/>.
+    In this respect, the user's attention is drawn to the risks associated
+    with loading,  using,  modifying and/or developing or reproducing the
+    software by the user in light of its specific status of free software,
+    that may mean  that it is complicated to manipulate,  and  that  also
+    therefore means  that it is reserved for developers  and  experienced
+    professionals having in-depth computer knowledge. Users are therefore
+    encouraged to load and test the software's suitability as regards their
+    requirements in conditions enabling the security of their systems and/or
+    data to be ensured and,  more generally, to use and operate it in the
+    same conditions as regards security.
 
+    The fact that you are presently reading this means that you have had
+    knowledge of the CeCILL-B license and that you accept its terms.
 
 We used the Luengo Hendriks path opening algorithm presented in Fig2 of this paper:
 Luengo Hendriks, C.L., "Constrained and Dimensionality-Independent Path Openings,"
 in Image Processing, IEEE Transactions on , vol.19, no.6, pp.1587-1595, June 2010
 doi: 10.1109/TIP.2010.2044959
-
 */
+
+#ifndef PO_INCLUDED
+#define PO_INCLUDED
+
 
 #include <iostream>
 #include <string>
