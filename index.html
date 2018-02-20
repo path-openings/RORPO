@@ -81,25 +81,30 @@ In the RORPO_multiscale_Usage directory, you can find the full RORPO_multiscale 
 <li Niftilib is needed
 </ul>
 
+Accepted type : int8, uint8, int16, uint16, int32, uint32, float
+An isotropic image resolution is required (cubic voxels). 
+	
 The arguments of the function are as follows :
 </p>
 
 <pre><code>
---input (-i) : path to the .mha or .nii image. The image type must be short
---output (-o) : path to write the resulting image."
---smin (-s) : Minimum path length (int)"
---factor (-f) : factor for the geometric sequence of scales; scale_(n+1)=factor*scale_(n) (float)
---nb_scales (-n) : Number of scales (int)
---extension (-e) : 1 for nifti input image; 0 for mha input image (int).
-	
---window (-w): (optional) Min and max values of the new intensity range of input image (2 int)
-			    Convert input image to uint8. Intensities inferior to window_min become 0, intensities superior to window_max become 255; Linear transformation between window_min and window_max
---core (-c): (optional) nb of CPUs used for RPO computation (int)
---mask or -m : (optional) path to a mask for the input image (0 for the background and 1 for the foreground). The image type must be uint8.
---debug : (optional) Activation of a debug mode.
+Parameters : 
 
-Usage Example : ./RORPO_multiscale -i input_image.mha -o result.mha -s 30 -f 1.5 -n 2 -e 0 -m 'Mask_image.mha'
-Usage Example : ./RORPO_multiscale --debug --input input_image.nii -output result.nii -s 30 -f 1.5 -n 2 -e 1 --window 100 3250
+<imagePath>: path to .nii image (string).
+<outputPath>: path to write the resulting image (string).
+<scaleMin>: Minimum path length (int)
+<factor>: factor for the geometric sequence of scales; scale_(n+1) = factor * scale_(n) (float)
+<nbScales>: Number of scales (int)
+
+Options:
+--window:     Intensity range from the input image (2 int: window_min, window_max)
+		      Convert input image to uint8. Intensities inferior to window_min become 0, intensities superior to window_max become 255; Linear transformation between window_min and window_max
+--core:       Number of CPUs used for RPO computation (int)
+--mask or :   Path to a mask image (0 for the background and 1 for the foreground). RORPO will only be computed in this mask. The mask image type must be uint8.
+--verbose:    Activation of a verbose mode.
+
+Usage Example : ./RORPO_multiscale_usage input.nii output.nii 40 1.32 4 
+Usage Example : ./RORPO_multiscale_usage input.nii output.nii 40 1.32 4 --window 0,255 --verbose --core 4
 </code></pre>
 
 <h3>
