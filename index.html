@@ -78,18 +78,16 @@ In the RORPO_multiscale_Usage directory, you can find the full RORPO_multiscale 
 <li> Compile the libRORPO
 <li> Compile the function with the CMakeLists in the RORPO_multiscale_Usage directory. You need to change the path of FIND_LIBRARY to the one where you compiled libRORPO and include_directories to the one where the header libRORPO are.
 <li> VTK version 6 or greater is needed
-<li Niftilib is needed
+<li> Niftilib (provided) is needed
+<li> Accepted type : int8, uint8, int16, uint16, int32, uint32, float
+<li> An isotropic image resolution is required (cubic voxels). 
 </ul>
-
-Accepted type : int8, uint8, int16, uint16, int32, uint32, float
-An isotropic image resolution is required (cubic voxels). 
 	
 The arguments of the function are as follows :
 </p>
 
 <pre><code>
 Parameters : 
-
 <imagePath>: path to .nii image (string).
 <outputPath>: path to write the resulting image (string).
 <scaleMin>: Minimum path length (int)
