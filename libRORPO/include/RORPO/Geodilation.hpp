@@ -45,14 +45,14 @@ odyssee.merveille@gmail.com
 template<typename T>
 Image3D<T> geodilation(Image3D<T> &G, Image3D<T> &R, int connex, int niter)
 {
-    Image3D<T> geodilat(G.Dimx(), G.Dimy(), G.Dimz());
-	
+    Image3D<T> geodilat(G.dimX(), G.dimY(), G.dimZ());
+
 	// Pink Images
     struct xvimage* imageG;
     struct xvimage* imageR;
     struct xvimage* temp;
     int32_t typepixel;
-    
+
 	if (sizeof(T)==1)
    		typepixel = VFF_TYP_1_BYTE;
    	else if (sizeof(T)==2)
@@ -62,25 +62,25 @@ Image3D<T> geodilation(Image3D<T> &G, Image3D<T> &R, int connex, int niter)
 	else
 		std::cerr<<"Error in Geodilation : ImageType not known"<<std::endl;
 
-    imageG=allocheader(NULL,G.Dimx(),G.Dimy(),G.Dimz(),typepixel);
+    imageG=allocheader(NULL,G.dimX(),G.dimY(),G.dimZ(),typepixel);
     imageG->image_data= G.get_pointer();
 
-    imageR=allocheader(NULL,G.Dimx(),G.Dimy(),G.Dimz(),typepixel);
+    imageR=allocheader(NULL,G.dimX(),G.dimY(),G.dimZ(),typepixel);
     imageR->image_data= R.get_pointer();
 
     temp=copyimage(imageG);
 
     lgeodilat(temp,imageR,connex,niter);
 
-    for (int z = 0; z<G.Dimz()  ; ++z){
-		for (int y = 0; y<G.Dimy() ; ++y){
-			for (int x = 0; x<G.Dimx(); ++x){
+    for (int z = 0; z<G.dimZ()  ; ++z){
+		for (int y = 0; y<G.dimY() ; ++y){
+			for (int x = 0; x<G.dimX(); ++x){
                     geodilat(x, y, z) = ((T *)(temp->image_data))[x
-                            + y * G.Dimx() + z * G.Dimx() * G.Dimy()];
+                            + y * G.dimX() + z * G.dimX() * G.dimY()];
 			}
 		}
 	}
-	
+
     free(imageR);
     free(imageG);
     free(temp);

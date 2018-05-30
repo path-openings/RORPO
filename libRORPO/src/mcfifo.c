@@ -56,7 +56,7 @@ Fifo * CreeFifoVide(
 #ifdef MC_64_BITS
     fprintf(stderr, "CreeFifoVide() : malloc failed : %lld bytes\n", sizeof(Fifo) + sizeof(index_t) * taillemax);
 #else
-    fprintf(stderr, "CreeFifoVide() : malloc failed : %d bytes\n", sizeof(Fifo) + sizeof(index_t) * taillemax);
+    fprintf(stderr, "CreeFifoVide() : malloc failed : %ld bytes\n", sizeof(Fifo) + sizeof(index_t) * taillemax);
 #endif
     return NULL;
   }
@@ -205,5 +205,3 @@ void main()
   if (FifoVide(L)) printf("FifoVide OUI\n");
 }
 #endif
-
-

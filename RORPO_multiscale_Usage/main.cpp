@@ -39,7 +39,7 @@ odyssee.merveille@gmail.com
 
 #include "docopt.h"
 #include "Image/Image.hpp"
-#include "Image/Image_IO_nifti.hpp"
+#include "Image/Image_IO_ITK.hpp"
 #include "RORPO/RORPO_multiscale.hpp"
 
 typedef uint16_t u_int16_t;
@@ -59,44 +59,43 @@ std::vector<std::string> split(std::string str, char delimiter) {
 
 
 template<typename PixelType>
-int RORPO_multiscale_usage(Image3D<PixelType> image,
+int RORPO_multiscale_usage(Image3D<PixelType>& image,
                 std::string outputPath,
-                std::vector<int> scaleList,
-                std::vector<int> window,
+                std::vector<int>& scaleList,
+                std::vector<int>& window,
                 int nbCores,
                 int verbose,
                 std::string maskPath)
 {
-    int dimz = image.Dimz();
-    int dimy = image.Dimy();
-    int dimx= image.Dimx();
-	
+    unsigned int dimz = image.dimZ();
+    unsigned int dimy = image.dimY();
+    unsigned int dimx= image.dimX();
+
     if (verbose){
-		std::cout<<"NIFTI Image"<<std::endl;
-        std::cout<<"dimx= "<<dimx<<"; dimy= "<<dimy<<"; dimz= "<<dimz<<std::endl;
+        std::cout << "dimensions: [" << dimx << ", " << dimy << ", " << dimz << "]" << std::endl;
 	}
 
     // ------------------ Compute input image intensity range ------------------
 
-    std::vector<PixelType> minmax = image.min_max_value();
+    std::pair<PixelType,PixelType> minmax = image.min_max_value();
 
     if (verbose){
-        std::cout<< "Image intensity range: "<< (float)minmax[0]<<", "
-                 << (float)minmax[1] << std::endl;
+        std::cout<< "Image intensity range: "<< minmax.first << ", "
+                 << minmax.second << std::endl;
         std::cout<<std::endl;
 	}
 
     // -------------------------- mask Image -----------------------------------
-		
-    Image3D<unsigned char> mask;
+
+    Image3D<uint8_t> mask;
 
     if (!maskPath.empty()) // A mask image is given
 	{
-        mask = read_3D_nifti_image<uint8_t>(maskPath);
+        mask = Read_Itk_Image<uint8_t>(maskPath);
 
-        if (mask.Dimx() != dimx || mask.Dimy() != dimy || mask.Dimz() != dimz){
-            std::cerr<<"Size of the mask image (dimx= "<<mask.Dimx()
-                    <<" dimy= "<<mask.Dimy()<<" dimz="<<mask.Dimz()
+        if (mask.dimX() != dimx || mask.dimY() != dimy || mask.dimZ() != dimz){
+            std::cerr<<"Size of the mask image (dimx= "<<mask.dimX()
+                    <<" dimy= "<<mask.dimY()<<" dimz="<<mask.dimZ()
                    << ") is different from size of the input image"<<std::endl;
             return 1;
         }
@@ -105,41 +104,31 @@ int RORPO_multiscale_usage(Image3D<PixelType> image,
     // #################### Convert input image to char #######################
 
     if (window[2] == 1 || typeid(PixelType) == typeid(float) ||
-            typeid(PixelType) == typeid(double)){
+            typeid(PixelType) == typeid(double))
+    {
+        if (minmax.first > (PixelType) window[0])
+            window[0] = minmax.first;
 
-        if (window[2] == 1) { // window the intensity range to [0,255]
-            if (minmax[0] > (PixelType) window[0])
-                window[0] = minmax[0];
+        if (minmax.second < (PixelType) window[1])
+            window[1] = minmax.second;
 
-            if (minmax[1] < (PixelType) window[1])
-                window[1] = minmax[1];
-
-            image.window_dynamic(window[0], window[1]);
-
-            if(verbose){
-                std::cout<<"Convert image intensity range from: [";
-                std::cout<<window[0]<<", "<<window[1]<<"] to [";
-                std::cout<<"0"<<", "<<"255"<<"]"<<std::endl;
-            }
+        if(verbose){
+            std::cout<<"Convert image intensity range from: [";
+            std::cout<<minmax.first<<", "<<minmax.second<<"] to [";
+            std::cout<<window[0]<<", "<<window[1]<<"]"<<std::endl;
         }
 
-        else{ // convert the full intensity range to [0,255]
-            image.window_dynamic(minmax[0], minmax[1]);
-            if(verbose){
-                std::cout<<"Convert image intensity range from: [";
-                std::cout<<minmax[0]<<", "<<minmax[1]<<"] to [";
-                std::cout<<"0"<<", "<<"255"<<"]"<<std::endl;
-            }
-        }
-
-        minmax = image.min_max_value();
-        Image3D<uint8_t>imageChar= image.copy_image_2_uchar();
+        image.window_dynamic(window[0], window[1]);
 
         if(verbose)
-            std::cout<<"Convert image to uint8"<<std::endl;
+            std::cout << "Convert image to uint8" << std::endl;
+
+        minmax.first = 0;
+        minmax.second = 255;
+        Image3D<uint8_t> imageChar = image.copy_image_2_uchar();
 
         // Run RORPO multiscale
-        Image3D<uint8_t> multiscale=
+        Image3D<uint8_t> multiscale =
                 RORPO_multiscale<uint8_t, uint8_t>(imageChar,
                                                    scaleList,
                                                    nbCores,
@@ -147,7 +136,7 @@ int RORPO_multiscale_usage(Image3D<PixelType> image,
                                                    mask);
 
         // Write the result to nifti image
-        write_3D_nifti_image<uint8_t>(multiscale, outputPath);
+        Write_Itk_Image<uint8_t>( multiscale, outputPath );
     }
 
     // ################## Keep input image in PixelType ########################
@@ -156,28 +145,28 @@ int RORPO_multiscale_usage(Image3D<PixelType> image,
 
         // ------------------------ Negative intensities -----------------------
 
-        if (minmax[0] < 0){
-            image - minmax[0];
+        if (minmax.first < 0)
+        {
+            image -= minmax.first;
 
             if(verbose){
-                std::cout<<"Convert image intensity range from [";
-                std::cout<<minmax[0]<<", "<<minmax[1]<<"] to [";
-                std::cout<<"0"<<", "<<minmax[1] - minmax[0]<<"]"<<std::endl;
+                std::cout << "Convert image intensity range from [";
+                std::cout << minmax.first << ", " << minmax.second << "] to [";
+                std::cout << "0" << ", " << minmax.second - minmax.first << "]"
+                            << std::endl;
             }
-            minmax = image.min_max_value();
         }
 
         // Run RORPO multiscale
-        Image3D<PixelType> multiscale=
+        Image3D<PixelType> multiscale =
                 RORPO_multiscale<PixelType, uint8_t>(image,
-                                                              scaleList,
-                                                              nbCores,
-                                                              verbose,
-                                                              mask);
+                                                    scaleList,
+                                                    nbCores,
+                                                    verbose,
+                                                    mask);
 
         // Write the result to nifti image
-        write_3D_nifti_image<PixelType>(multiscale, outputPath);
-
+        Write_Itk_Image<PixelType>(multiscale, outputPath);
     }
 
     return 0;
@@ -189,17 +178,18 @@ static const char USAGE[] =
 R"(RORPO_multiscale_usage.
 
     USAGE:
-    RORPO_multiscale_usage <imagePath> <outputPath> <scaleMin> <factor> <nbScales> [--window=min,max] [--core=nbCores] [--mask=maskPath] [--verbose]
+    RORPO_multiscale_usage <imagePath> <outputPath> <scaleMin> <factor> <nbScales> [--window=min,max] [--core=nbCores] [--mask=maskPath] [--verbose] [--series]
 
     Options:
-         --core=<nbCores>  Number of CPUs used for RPO computation
-         --window=min,max     Convert intensity range [min, max] of the intput \
-                              image to [0,255] and convert to uint8 image\
-                              (strongly decrease computation time).
-         --mask=maskPath      Path to a mask for the input image \
-                              (0 for the background; not 0 for the foreground).\
-                              mask image type must be uint8.
-         --verbose            Activation of a verbose mode.
+         --core=<nbCores>   Number of CPUs used for RPO computation
+         --window=min,max   Convert intensity range [min, max] of the intput \
+                            image to [0,255] and convert to uint8 image\
+                            (strongly decrease computation time).
+         --mask=maskPath    Path to a mask for the input image \
+                            (0 for the background; not 0 for the foreground).\
+                            mask image type must be uint8.
+         --verbose          Activation of a verbose mode.
+         --dicom            Specify that <imagePath> is a DICOM image.
         )";
 
 
@@ -227,6 +217,7 @@ int main(int argc, char **argv)
     int nbCores = 1;
     std::string maskPath;
     bool verbose = args["--verbose"].asBool();
+    bool dicom = args.count("--dicom");
 
     if (args["--mask"])
         maskPath = args["--mask"].asString();
@@ -261,60 +252,27 @@ int main(int argc, char **argv)
             std::cout<<','<<scaleList[i];
     }
 
-    // -------------------------- Read Nifti Image -----------------------------
-    nifti_image *nim = NULL;
-    nim = nifti_image_read(imagePath.c_str(), 1);
+    // -------------------------- Read ITK Image -----------------------------
+    Image3DMetadata imageMetadata = Read_Itk_Metadata(imagePath);
 
     // ---------------- Find image type and run RORPO multiscale ---------------
     int error;
     if (verbose){
         std::cout<<" "<<std::endl;
         std::cout << "------ INPUT IMAGE -------" << std::endl;
+        std::cout << "Input image type: " << imageMetadata.pixelTypeString << std::endl;
     }
 
-    switch(nim->datatype){
-        case 2: { // uint8
-            if (verbose)
-                std::cout<<"Input image type: uint8"<<std::endl;
-
-            Image3D<uint8_t> image = read_3D_nifti_image<uint8_t>(nim);
-            nifti_image_free(nim);
-
-            error = RORPO_multiscale_usage<uint8_t>(image,
-                                                    outputPath,
-                                                    scaleList,
-                                                    window,
-                                                    nbCores,
-                                                    verbose,
-                                                    maskPath);
-            break;
+    if ( imageMetadata.nbDimensions != 3 ) {
+        std::cout << "Error: input image dimension is " << imageMetadata.nbDimensions << " but should be 3 " << std::endl;
+        return 1;
     }
 
-        case 4: { // uint16
-            if (verbose)
-                std::cout<<"Input image type: uint16 "<<std::endl;
-
-            Image3D<u_int16_t> image = read_3D_nifti_image<u_int16_t>(nim);
-            nifti_image_free(nim);
-
-            error = RORPO_multiscale_usage<u_int16_t>(image,
-                                                      outputPath,
-                                                      scaleList,
-                                                      window,
-                                                      nbCores,
-                                                      verbose,
-                                                      maskPath);
-            break;
-        }
-
-        case 8: { // uint32
-            if (verbose)
-                std::cout<<"Input image type: int32 "<<std::endl;
-
-            Image3D<int32_t> image = read_3D_nifti_image<int32_t>(nim);
-            nifti_image_free(nim);
-
-            error = RORPO_multiscale_usage<int32_t>(image,
+    switch (imageMetadata.pixelType){
+        case itk::ImageIOBase::UCHAR:
+        {
+            Image3D<unsigned char> image = dicom?Read_Itk_Image_Series<unsigned char>(imagePath):Read_Itk_Image<unsigned char>(imagePath);
+            error = RORPO_multiscale_usage<unsigned char>(image,
                                                     outputPath,
                                                     scaleList,
                                                     window,
@@ -323,15 +281,10 @@ int main(int argc, char **argv)
                                                     maskPath);
             break;
         }
-
-        case 16: { // float
-            if (verbose)
-                std::cout<<"Input image type: float "<<std::endl;
-
-            Image3D<float_t> image = read_3D_nifti_image<float_t>(nim);
-            nifti_image_free(nim);
-
-            error = RORPO_multiscale_usage<float_t>(image,
+        case itk::ImageIOBase::CHAR:
+        {
+            Image3D<char> image = dicom?Read_Itk_Image_Series<char>(imagePath):Read_Itk_Image<char>(imagePath);
+            error = RORPO_multiscale_usage<char>(image,
                                                     outputPath,
                                                     scaleList,
                                                     window,
@@ -340,30 +293,10 @@ int main(int argc, char **argv)
                                                     maskPath);
             break;
         }
-        case 256: { // int8
-            if (verbose)
-                std::cout<<"Input image type: int8 "<<std::endl;
-
-            Image3D<int8_t> image = read_3D_nifti_image<int8_t>(nim);
-            nifti_image_free(nim);
-
-            error = RORPO_multiscale_usage<int8_t>(image,
-                                                   outputPath,
-                                                   scaleList,
-                                                   window,
-                                                   nbCores,
-                                                   verbose,
-                                                   maskPath);
-            break;
-        }
-        case 512: { // int16
-            if (verbose)
-                std::cout<<"Input image type: int16 "<<std::endl;
-
-            Image3D<int16_t> image = read_3D_nifti_image<int16_t>(nim);
-            nifti_image_free(nim);
-
-            error = RORPO_multiscale_usage<int16_t>(image,
+        case itk::ImageIOBase::USHORT:
+        {
+            Image3D<unsigned short> image = dicom?Read_Itk_Image_Series<unsigned short>(imagePath):Read_Itk_Image<unsigned short>(imagePath);
+            error = RORPO_multiscale_usage<unsigned short>(image,
                                                     outputPath,
                                                     scaleList,
                                                     window,
@@ -372,30 +305,120 @@ int main(int argc, char **argv)
                                                     maskPath);
             break;
         }
-        case 768: { // uint32
-            if (verbose)
-                std::cout<<"Input image type: uint32 "<<std::endl;
-
-            Image3D<uint32_t> image = read_3D_nifti_image<uint32_t>(nim);
-            nifti_image_free(nim);
-
-            error = RORPO_multiscale_usage<uint32_t>(image,
-                                                     outputPath,
-                                                     scaleList,
-                                                     window,
-                                                     nbCores,
-                                                     verbose,
-                                                     maskPath);
+        case itk::ImageIOBase::SHORT:
+        {
+            Image3D<short> image = dicom?Read_Itk_Image_Series<short>(imagePath):Read_Itk_Image<short>(imagePath);
+            error = RORPO_multiscale_usage<short>(image,
+                                                    outputPath,
+                                                    scaleList,
+                                                    window,
+                                                    nbCores,
+                                                    verbose,
+                                                    maskPath);
             break;
         }
-        default : {
-            std::cerr<<"Input image type not supported "<<std::endl;
+        case itk::ImageIOBase::UINT:
+        {
+            Image3D<unsigned int> image = dicom?Read_Itk_Image_Series<unsigned int>(imagePath):Read_Itk_Image<unsigned int>(imagePath);
+            error = RORPO_multiscale_usage<unsigned int>(image,
+                                                    outputPath,
+                                                    scaleList,
+                                                    window,
+                                                    nbCores,
+                                                    verbose,
+                                                    maskPath);
+            break;
+        }
+        case itk::ImageIOBase::INT:
+        {
+            Image3D<int> image = dicom?Read_Itk_Image_Series<int>(imagePath):Read_Itk_Image<int>(imagePath);
+            error = RORPO_multiscale_usage<int>(image,
+                                                    outputPath,
+                                                    scaleList,
+                                                    window,
+                                                    nbCores,
+                                                    verbose,
+                                                    maskPath);
+            break;
+        }
+        case itk::ImageIOBase::ULONG:
+        {
+            Image3D<unsigned long> image = dicom?Read_Itk_Image_Series<unsigned long>(imagePath):Read_Itk_Image<unsigned long>(imagePath);
+            error = RORPO_multiscale_usage<unsigned long>(image,
+                                                    outputPath,
+                                                    scaleList,
+                                                    window,
+                                                    nbCores,
+                                                    verbose,
+                                                    maskPath);
+            break;
+        }
+        case itk::ImageIOBase::LONG:
+        {
+            Image3D<long> image = dicom?Read_Itk_Image_Series<long>(imagePath):Read_Itk_Image<long>(imagePath);
+            error = RORPO_multiscale_usage<long>(image,
+                                                    outputPath,
+                                                    scaleList,
+                                                    window,
+                                                    nbCores,
+                                                    verbose,
+                                                    maskPath);
+            break;
+        }
+        case itk::ImageIOBase::ULONGLONG:
+        {
+            Image3D<unsigned long long> image = dicom?Read_Itk_Image_Series<unsigned long long>(imagePath):Read_Itk_Image<unsigned long long>(imagePath);
+            error = RORPO_multiscale_usage<unsigned long long>(image,
+                                                    outputPath,
+                                                    scaleList,
+                                                    window,
+                                                    nbCores,
+                                                    verbose,
+                                                    maskPath);
+            break;
+        }
+        case itk::ImageIOBase::LONGLONG:
+        {
+            Image3D<long long> image = dicom?Read_Itk_Image_Series<long long>(imagePath):Read_Itk_Image<long long>(imagePath);
+            error = RORPO_multiscale_usage<long long>(image,
+                                                    outputPath,
+                                                    scaleList,
+                                                    window,
+                                                    nbCores,
+                                                    verbose,
+                                                    maskPath);
+            break;
+        }
+        case itk::ImageIOBase::FLOAT:
+        {
+            Image3D<float> image = dicom?Read_Itk_Image_Series<float>(imagePath):Read_Itk_Image<float>(imagePath);
+            error = RORPO_multiscale_usage<float>(image,
+                                                    outputPath,
+                                                    scaleList,
+                                                    window,
+                                                    nbCores,
+                                                    verbose,
+                                                    maskPath);
+            break;
+        }
+        case itk::ImageIOBase::DOUBLE:
+        {
+            Image3D<double> image = dicom?Read_Itk_Image_Series<double>(imagePath):Read_Itk_Image<double>(imagePath);
+            error = RORPO_multiscale_usage<double>(image,
+                                                    outputPath,
+                                                    scaleList,
+                                                    window,
+                                                    nbCores,
+                                                    verbose,
+                                                    maskPath);
+            break;
+        }
+        case itk::ImageIOBase::UNKNOWNCOMPONENTTYPE:
+        default:
             error = 1;
+            std::cout << "Error: pixel type unknown." << std::endl;
             break;
-        }
-    } //end switch
-
+    }
     return error;
 
 }//end main
-
