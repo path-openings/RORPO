@@ -309,22 +309,22 @@ void PO_3D(Image3D<T> &image,
 		std::vector<int> &orientations,
 		Image3D<T> &Output,
 		std::vector<bool> b)
-			
+
 {
-	
+
 	// Create the offset np and nm
 	std::vector<int>np;
 	std::vector<int>nm;
-    create_neighbourhood(image.Dimx(), image.Dimx() * image.Dimy(),
+    create_neighbourhood(image.dimX(), image.dimX() * image.dimY(),
                          orientations, np, nm);
 
 	//Create other temporary images
-    std::vector<int>Lp(image.image_size(), L);
-    std::vector<int>Lm(image.image_size(), L);
+    std::vector<int>Lp(image.size(), L);
+    std::vector<int>Lm(image.size(), L);
 
 	//Create FIFO queue Qc
 	std::queue<IndexType> Qc;
-	
+
 	// Propagate
 	std::vector<IndexType>::iterator it;
 	int indice;
@@ -356,11 +356,3 @@ void PO_3D(Image3D<T> &image,
 
 
 #endif // PO_INCLUDED
-
-
-
-
-
-
-
-

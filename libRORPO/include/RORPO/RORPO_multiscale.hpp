@@ -44,25 +44,25 @@ odyssee.merveille@gmail.com
 
 template<typename PixelType, typename MaskType>
 Image3D<PixelType> RORPO_multiscale(Image3D<PixelType> &I,
-                                    std::vector<int>S_list,
+                                    const std::vector<int>& S_list,
                                     int nb_core,
                                     int debug_flag,
                                     Image3D<MaskType> &Mask)
 {
 
     // ################## Computation of RORPO for each scale ##################
-	
-    Image3D<PixelType> Multiscale(I.Dimx(), I.Dimy(), I.Dimz());
 
-	std::vector<int>::iterator it;
-	
+    Image3D<PixelType> Multiscale(I.dimX(), I.dimY(), I.dimZ());
+
+	std::vector<int>::const_iterator it;
+
 	for (it=S_list.begin();it!=S_list.end();++it)
 	{
         Image3D<PixelType> One_Scale =
                 RORPO<PixelType, MaskType>(I, *it, nb_core, Mask);
 
         // Max of scales
-	    max_crush(Multiscale, One_Scale); 
+	    max_crush(Multiscale, One_Scale);
 	}
 
     // ----------------- Dynamic Enhancement ---------------
@@ -71,18 +71,11 @@ Image3D<PixelType> RORPO_multiscale(Image3D<PixelType> &I,
 	int max_value_I = I.max_value();
 
     // Contrast Enhancement
-	for (int z = 0; z < Multiscale.Dimz() ; ++z){
-		for (int y = 0; y < Multiscale.Dimy(); ++y){
-			for (int x = 0; x < Multiscale.Dimx(); ++x){
-                Multiscale(x, y, z) =
-                        (PixelType)((Multiscale(x, y, z)
-                                     / (float)max_value_RORPO ) * max_value_I);
-			}
-		}
-	}
+	for ( auto& val : Multiscale.get_data() )
+        val = (PixelType)((val / (float)max_value_RORPO ) * max_value_I);
 
 	min_crush(Multiscale, I);
-		
+
     if (!Mask.empty()) // A mask image is given
 	{
 		// Application of the non dilated mask to output

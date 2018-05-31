@@ -57,51 +57,51 @@ void Stuff_PO(Image3D<T> &dilatImageWithBorders,
 
     // Sort the grey level intensity in a vector
     index_image = sort_image_value<T,long>(dilatImageWithBorders.get_pointer(),
-                                           dilatImageWithBorders.image_size());
+                                           dilatImageWithBorders.size());
 
 
-    int new_dimz = dilatImageWithBorders.Dimz();
-    int new_dimy = dilatImageWithBorders.Dimy();
-    int new_dimx = dilatImageWithBorders.Dimx();
+    int new_dimz = dilatImageWithBorders.dimZ();
+    int new_dimy = dilatImageWithBorders.dimY();
+    int new_dimx = dilatImageWithBorders.dimX();
 
     // z = 0
-    for (int y = 0; y < dilatImageWithBorders.Dimy() ; ++y){
-        for (int x = 0 ; x < dilatImageWithBorders.Dimx() ; ++x){
+    for (int y = 0; y < dilatImageWithBorders.dimY() ; ++y){
+        for (int x = 0 ; x < dilatImageWithBorders.dimX() ; ++x){
             b[y*new_dimx+x] = 0;
         }
     }
 
     //z = dimz-1
-    for (int y = 0; y < dilatImageWithBorders.Dimy() ; ++y){
-        for (int x = 0 ; x < dilatImageWithBorders.Dimx() ; ++x){
+    for (int y = 0; y < dilatImageWithBorders.dimY() ; ++y){
+        for (int x = 0 ; x < dilatImageWithBorders.dimX() ; ++x){
             b[(new_dimz-1)*new_dimx*new_dimy+y*new_dimx+x] = 0;
         }
     }
 
     //x = 0
-    for (int z = 0 ; z < dilatImageWithBorders.Dimz() ; ++z){
-        for (int y = 0 ; y < dilatImageWithBorders.Dimy() ; ++y){
+    for (int z = 0 ; z < dilatImageWithBorders.dimZ() ; ++z){
+        for (int y = 0 ; y < dilatImageWithBorders.dimY() ; ++y){
             b[z*new_dimx*new_dimy+y*new_dimx] = 0;
         }
     }
 
     //x = dimx-1
-    for (int z = 0 ; z < dilatImageWithBorders.Dimz() ; ++z){
-        for (int y = 0 ; y < dilatImageWithBorders.Dimy() ; ++y){
+    for (int z = 0 ; z < dilatImageWithBorders.dimZ() ; ++z){
+        for (int y = 0 ; y < dilatImageWithBorders.dimY() ; ++y){
             b[z*new_dimx*new_dimy+y*new_dimx+new_dimx-1] = 0;
         }
     }
 
     // y = 0
-    for (int z = 0 ; z < dilatImageWithBorders.Dimz(); ++z){
-        for (int x = 0 ; x < dilatImageWithBorders.Dimx() ; ++x){
+    for (int z = 0 ; z < dilatImageWithBorders.dimZ(); ++z){
+        for (int x = 0 ; x < dilatImageWithBorders.dimX() ; ++x){
             b[z*new_dimy*new_dimx+x] = 0;
         }
     }
 
     // y = dimy-1
-    for (int z = 0 ; z < dilatImageWithBorders.Dimz() ; ++z){
-        for (int x = 0 ; x < dilatImageWithBorders.Dimx() ; ++x){
+    for (int z = 0 ; z < dilatImageWithBorders.dimZ() ; ++z){
+        for (int x = 0 ; x < dilatImageWithBorders.dimX() ; ++x){
             b[z*new_dimy*new_dimx+(new_dimy-1)*new_dimx+x] = 0;
         }
     }
@@ -116,9 +116,9 @@ void Stuff_PO(Image3D<T> &dilatImageWithBorders,
 
         // Mask dynamic [0 1] ==> [0 255] for the dilation
         int ind=0;
-        for(int z = 0; z < Mask_dilat.Dimz(); ++z) {
-            for(int y = 0 ; y < Mask_dilat.Dimy(); ++y) {
-                for(int x = 0; x < Mask_dilat.Dimx(); ++x) {
+        for(int z = 0; z < Mask_dilat.dimZ(); ++z) {
+            for(int y = 0 ; y < Mask_dilat.dimY(); ++y) {
+                for(int x = 0; x < Mask_dilat.dimX(); ++x) {
                     if (Mask_dilat(x,y,z) != 0){
                         Mask_dilat(x,y,z) = 255;
                         ind += 1;
@@ -128,14 +128,14 @@ void Stuff_PO(Image3D<T> &dilatImageWithBorders,
         }
 
         // Dilation
-        rect3dminmax(Mask_dilat.get_pointer(), Mask_dilat.Dimx(),
-                     Mask_dilat.Dimy(), Mask_dilat.Dimz(),
+        rect3dminmax(Mask_dilat.get_pointer(), Mask_dilat.dimX(),
+                     Mask_dilat.dimY(), Mask_dilat.dimZ(),
                      r_dilat, r_dilat, r_dilat, false);
 
         ind = 0;
-        for(int z = 0; z < Mask_dilat.Dimz(); ++z) {
-            for(int y = 0 ; y < Mask_dilat.Dimy(); ++y) {
-                for(int x = 0; x < Mask_dilat.Dimx(); ++x) {
+        for(int z = 0; z < Mask_dilat.dimZ(); ++z) {
+            for(int y = 0 ; y < Mask_dilat.dimY(); ++y) {
+                for(int x = 0; x < Mask_dilat.dimX(); ++x) {
                     if (Mask_dilat(x,y,z) == 0){
                         b[z*new_dimy*new_dimx+y*new_dimx+x] = 0;
                         ind += 1;
@@ -187,15 +187,15 @@ void RPO(const Image3D<T> &image, int L, Image3D<T> &RPO1,
 	orientation7[0] = -1;
 	orientation7[1] = 1;
 	orientation7[2] = -1;
-	
+
     // ################### Dilation + Add border on image ######################
-	
+
 	// Dilatation
     Image3D<T> imageDilat=image.copy_image();
-	
-    rect3dminmax(imageDilat.get_pointer(), imageDilat.Dimx(), imageDilat.Dimy(),
-                 imageDilat.Dimz(), 3, 3, 3, false);
-	
+
+    rect3dminmax(imageDilat.get_pointer(), imageDilat.dimX(), imageDilat.dimY(),
+                 imageDilat.dimZ(), 3, 3, 3, false);
+
     Image3D<T> dilatImageWithBorders=imageDilat.add_border(2);
     imageDilat.clear_image();
 
@@ -210,11 +210,11 @@ void RPO(const Image3D<T> &image, int L, Image3D<T> &RPO1,
 
 
     std::vector<long> index_image;
-    std::vector<bool>b(dilatImageWithBorders.image_size(),1);
+    std::vector<bool>b(dilatImageWithBorders.size(),1);
 
     Stuff_PO(dilatImageWithBorders, index_image, L, b, Mask);
-    
- 
+
+
 
     // ############################ COMPUTE PO #################################
 
@@ -223,12 +223,12 @@ void RPO(const Image3D<T> &image, int L, Image3D<T> &RPO1,
 
     // Calling PO for each orientation
     omp_set_num_threads(nb_core);
-	
+
     #ifdef OMP
     #pragma omp parallel shared(dilatImageWithBorders, index_image)
 	{
 		#pragma omp sections nowait
-		{	
+		{
 			#pragma omp section
 			{
 			#endif //OMP
@@ -237,7 +237,7 @@ void RPO(const Image3D<T> &image, int L, Image3D<T> &RPO1,
 			 std::cout<<"orientation1 1 0 0 : passed"<<std::endl;
 			#ifdef OMP
 			}
-			
+
 			#pragma omp section
 			{
 				#endif //OMP
@@ -253,7 +253,7 @@ void RPO(const Image3D<T> &image, int L, Image3D<T> &RPO1,
                 PO_3D<T, MaskType>(dilatImageWithBorders,
                                    L, index_image, orientation3, RPO3, b);
 			    std::cout<<"orientation3 0 0 1 : passed"<<std::endl;
-			
+
 			#ifdef OMP
 			}
 			#pragma omp section
@@ -262,7 +262,7 @@ void RPO(const Image3D<T> &image, int L, Image3D<T> &RPO1,
                 PO_3D<T, MaskType>(dilatImageWithBorders,
                                    L, index_image, orientation4, RPO4, b);
 			    std::cout<<"orientation4 1 1 1 : passed"<<std::endl;
-			
+
 			#ifdef OMP
 			}
 			#pragma omp section
@@ -271,7 +271,7 @@ void RPO(const Image3D<T> &image, int L, Image3D<T> &RPO1,
                 PO_3D<T, MaskType>(dilatImageWithBorders,
                                    L, index_image, orientation5, RPO5, b);
 			    std::cout<<"orientation5 1 1 -1 : passed"<<std::endl;
-			
+
 			#ifdef OMP
 			}
 			#pragma omp section
@@ -280,7 +280,7 @@ void RPO(const Image3D<T> &image, int L, Image3D<T> &RPO1,
                 PO_3D<T, MaskType>(dilatImageWithBorders,
                                    L, index_image, orientation6, RPO6, b);
 			    std::cout<<"orientation6 -1 1 1 : passed"<<std::endl;
-			
+
 			#ifdef OMP
 			}
 			#pragma omp section
@@ -289,20 +289,20 @@ void RPO(const Image3D<T> &image, int L, Image3D<T> &RPO1,
                 PO_3D<T, MaskType>(dilatImageWithBorders,
                                    L, index_image, orientation7, RPO7, b);
 			    std::cout<<"orientation7 -1 1 -1 : passed"<<std::endl;
-			
+
 			#ifdef OMP
 			}
 		}
     }
     #endif
-	
+
 	 std::cout<<"RPO computation completed"<<std::endl;
 
     dilatImageWithBorders.clear_image();
-	
+
     // Minimum between the computed RPO on the dilation and the initial image
     // + remove borders
-	
+
     RPO1.remove_border(2);
     RPO2.remove_border(2);
     RPO3.remove_border(2);
@@ -318,9 +318,7 @@ void RPO(const Image3D<T> &image, int L, Image3D<T> &RPO1,
     min_crush(RPO5, image);
     min_crush(RPO6, image);
     min_crush(RPO7, image);
-	
+
 }
 
 #endif //RPO_INCLUDED
-		
-		
