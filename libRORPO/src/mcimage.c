@@ -2302,7 +2302,7 @@ struct xvimage * readimage( const char *filename )
                   uint8_t tmp1;
                   for (i = 0; i < N; i++)
                   {
-                      (void)fread(&tmp, sizeof(uint16_t), 1, fd);
+                      bool = fread(&tmp, sizeof(uint16_t), 1, fd);
                       // conversion big-endian -> little-endian
                       tmp1 = tmp & 0x00ff;
                       tmp = tmp >> 8;
