@@ -71,8 +71,13 @@ int RORPO_multiscale_usage(Image3D<PixelType>& image,
     unsigned int dimy = image.dimY();
     unsigned int dimx= image.dimX();
 
+    float  spacingX = image.spacingX();
+    float  spacingY = image.spacingY();
+    float  spacingZ = image.spacingZ();
+
     if (verbose){
         std::cout << "dimensions: [" << dimx << ", " << dimy << ", " << dimz << "]" << std::endl;
+        std::cout << "spacing: [" << spacingX << ", " << spacingY << ", " << spacingZ << "]" << std::endl;
 	}
 
     // ------------------ Compute input image intensity range ------------------
@@ -80,8 +85,8 @@ int RORPO_multiscale_usage(Image3D<PixelType>& image,
     std::pair<PixelType,PixelType> minmax = image.min_max_value();
 
     if (verbose){
-        std::cout<< "Image intensity range: "<< minmax.first << ", "
-                 << minmax.second << std::endl;
+        std::cout<< "Image intensity range: "<< (int)minmax.first << ", "
+                 << (int)minmax.second << std::endl;
         std::cout<<std::endl;
 	}
 
@@ -151,8 +156,8 @@ int RORPO_multiscale_usage(Image3D<PixelType>& image,
 
             if(verbose){
                 std::cout << "Convert image intensity range from [";
-                std::cout << minmax.first << ", " << minmax.second << "] to [";
-                std::cout << "0" << ", " << minmax.second - minmax.first << "]"
+                std::cout << (int)minmax.first << ", " << (int)minmax.second << "] to [";
+                std::cout << "0" << ", " << (int)minmax.second - (int)minmax.first << "]"
                             << std::endl;
             }
         }
@@ -165,8 +170,45 @@ int RORPO_multiscale_usage(Image3D<PixelType>& image,
                                                     verbose,
                                                     mask);
 
+        // getting min and max from multiscale image
+        PixelType min = 255;
+        PixelType max = 0;
+ 
+        for( PixelType &value:multiscale.get_data() )
+        {
+            if( value > max)
+                max = value;
+            if( value < min)
+                min = value;
+        }
+
+
+        // normalize output
+        Image3D<float> multiscale_normalized(multiscale.dimX(),
+                                            multiscale.dimY(),
+                                            multiscale.dimZ(),
+                                            multiscale.spacingX(),
+                                            multiscale.spacingY(),
+                                            multiscale.spacingZ(),
+                                            multiscale.originX(),
+                                            multiscale.originY(),
+                                            multiscale.originZ()
+                                            );
+
+
+        for(unsigned int i=0; i<multiscale.size();i++)
+        {
+            multiscale_normalized.get_data()[i] = (multiscale.get_data()[i])/(float)(max); //
+        }
+
+        if(verbose)
+        {
+            std::cout<<"converting output image intensity :"<<(int)min<<"-"<<(int)max<<" to [0;1]"<<std::endl;
+        }
+
         // Write the result to nifti image
-        Write_Itk_Image<PixelType>(multiscale, outputPath);
+        Write_Itk_Image<float>(multiscale_normalized, outputPath);
+        //Write_Itk_Image<PixelType>(multiscale, outputPath);
     }
 
     return 0;
@@ -178,7 +220,7 @@ static const char USAGE[] =
 R"(RORPO_multiscale_usage.
 
     USAGE:
-    RORPO_multiscale_usage <imagePath> <outputPath> <scaleMin> <factor> <nbScales> [--window=min,max] [--core=nbCores] [--mask=maskPath] [--verbose] [--series]
+    RORPO_multiscale_usage --input=ImagePath --output=OutputPath --scaleMin=MinScale --factor=F --nbScales=NBS [--window=min,max] [--core=nbCores] [--mask=maskPath] [--verbose] [--series]
 
     Options:
          --core=<nbCores>   Number of CPUs used for RPO computation
@@ -208,11 +250,11 @@ int main(int argc, char **argv)
         std::cout << arg.first << ": " << arg.second << std::endl;
     }
 
-    std::string imagePath = args["<imagePath>"].asString();
-    std::string outputPath = args["<outputPath>"].asString();
-    float scaleMin = std::stoi(args["<scaleMin>"].asString());
-    float factor = std::stof(args["<factor>"].asString());
-    int nbScales = std::stoi(args["<nbScales>"].asString());
+    std::string imagePath = args["--input"].asString();
+    std::string outputPath = args["--output"].asString();
+    float scaleMin = std::stoi(args["--scaleMin"].asString());
+    float factor = std::stof(args["--factor"].asString());
+    int nbScales = std::stoi(args["--nbScales"].asString());
     std::vector<int> window(3);
     int nbCores = 1;
     std::string maskPath;
