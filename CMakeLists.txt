@@ -22,8 +22,10 @@ message("Build Type: " ${CMAKE_BUILD_TYPE})
 include_directories(
             libRORPO/include
             Image/include
-            docopt)
+            docopt
+            pyRORPO)
 
 add_subdirectory(libRORPO)
 add_subdirectory(docopt)
 add_subdirectory(RORPO_multiscale_Usage)
+add_subdirectory(pyRORPO)
