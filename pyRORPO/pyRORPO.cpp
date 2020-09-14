@@ -3,7 +3,6 @@
 #include "bind_RORPO.hpp"
 #include "bind_RORPO_multiscale.hpp"
 #include "bind_RPO.hpp"
-#include "bind_PO.hpp"
 
 using namespace pyRORPO;
 
@@ -11,7 +10,6 @@ using namespace pyRORPO;
     RORPO_MULTISCALE_BINDING(type); \
     RORPO_BINDING(type); \
     RPO_BINDING(type); \
-    PO_BINDING(type); \
 
 PYBIND11_MODULE(pyRORPO, m) {
     m.doc() = "pybind11 RORPO plugin"; // optional module docstring
