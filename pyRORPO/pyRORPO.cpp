@@ -7,7 +7,7 @@
 
 using namespace pyRORPO;
 
-#define BINDINGS(type) \
+#define BINDINGS_OF_TYPE(type) \
     RORPO_MULTISCALE_BINDING(type); \
     RORPO_BINDING(type); \
     RPO_BINDING(type); \
@@ -16,19 +16,19 @@ using namespace pyRORPO;
 PYBIND11_MODULE(pyRORPO, m) {
     m.doc() = "pybind11 RORPO plugin"; // optional module docstring
 
-    BINDINGS(int8_t);
-    BINDINGS(int16_t);
-    BINDINGS(int32_t);
-    BINDINGS(int64_t);
+    BINDINGS_OF_TYPE(int8_t);
+    BINDINGS_OF_TYPE(int16_t);
+    BINDINGS_OF_TYPE(int32_t);
+    BINDINGS_OF_TYPE(int64_t);
 
-    BINDINGS(uint8_t);
-    BINDINGS(uint16_t);
-    BINDINGS(uint32_t);
-    BINDINGS(uint64_t);
+    BINDINGS_OF_TYPE(uint8_t);
+    BINDINGS_OF_TYPE(uint16_t);
+    BINDINGS_OF_TYPE(uint32_t);
+    BINDINGS_OF_TYPE(uint64_t);
 
-    BINDINGS(float);
-    BINDINGS(double );
-    BINDINGS(long double);
+    BINDINGS_OF_TYPE(float);
+    BINDINGS_OF_TYPE(double );
+    BINDINGS_OF_TYPE(long double);
 
     RORPO_MULTISCALE_FROMFILE_BINDING(RORPO_multiscale_binding_fromPath) \
     RORPO_FROMFILE_BINDING() \
