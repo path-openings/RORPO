@@ -227,7 +227,7 @@ R"(RORPO_multiscale_usage.
 
     Options:
          --core=<nbCores>      Number of CPUs used for RPO computation \
-         --dilationSize=<Size> Size of the dilation for the noise robustness step \ 
+         --dilationSize=<Size> Size of the dilation for the noise robustness step \
          --window=min,max      Convert intensity range [min, max] of the intput \
                                image to [0,255] and convert to uint8 image\
                                (strongly decrease computation time).
