@@ -1,12 +1,12 @@
-################ RORPO Multiscale Usage ##############
+# RORPO Multiscale Usage
 
 Compute the RORPO multiscale for blood vessels from a .nii image.
 
-Accepted type : int8, uint8, int16, uint16, int32, uint32, float
-An isotropic image resolution is required (cubic voxels). 
+**Accepted type**: int8, uint8, int16, uint16, int32, uint32, float
 
-Parameters : 
-
+***An isotropic image resolution is required (cubic voxels)***.
+```
+Parameters :
 <imagePath>: path to .nii image (string).
 <outputPath>: path to write the resulting image (string).
 <scaleMin>: Minimum path length (int)
@@ -19,7 +19,26 @@ Options:
 --core:       Number of CPUs used for RPO computation (int)
 --mask or :   Path to a mask image (0 for the background and 1 for the foreground). RORPO will only be computed in this mask. The mask image type must be uint8.
 --verbose:    Activation of a verbose mode.
+```
 
-Usage Example : ./RORPO_multiscale_usage input.nii output.nii 40 1.32 4 
-Usage Example : ./RORPO_multiscale_usage input.nii output.nii 40 1.32 4 --window 0,255 --verbose --core 4
+Usage Example :
+```
+./RORPO_multiscale_usage input.nii output.nii 40 1.32 4
+```
+
+Usage Example :
+```
+./RORPO_multiscale_usage input.nii output.nii 40 1.32 4 --window 0,255 --verbose --core 4
+```
+
+## Test
+To build tests, (re-)generate a build system with any CMAKE_BUILD_TYPE flags except release.
+```
+cmake [options] -DCMAKE_BUILD_TYPE=Debug <path-to-source>
+make tests
+```
+To run tests:
+```
+make test
+```
 

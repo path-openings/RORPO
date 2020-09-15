@@ -24,6 +24,9 @@ include_directories(
             Image/include
             docopt)
 
+if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Release")
+	enable_testing()
+endif()
 add_subdirectory(libRORPO)
 add_subdirectory(docopt)
 add_subdirectory(RORPO_multiscale_Usage)
