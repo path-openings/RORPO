@@ -5,7 +5,6 @@
 
 #include "pyRORPO.hpp"
 
-#include "bindingUtils.hpp"
 #include "RORPO/RORPO.hpp"
 
 #define RORPO_BINDING(x) \
@@ -37,15 +36,7 @@ namespace pyRORPO
 
         // ---------------------------- Load image data ----------------------------
 
-        Image3D<PixelType> image = pyarrayToImage3D<PixelType>(
-            imageArray,
-            spacing[0],
-            spacing[1],
-            spacing[2],
-            origin[0],
-            origin[1],
-            origin[2]
-        );
+        Image3D<PixelType> image = pyarrayToImage3D<PixelType>(imageArray, spacing, origin);
 
         // -------------------------- mask Image -----------------------------------
 
@@ -74,17 +65,7 @@ namespace pyRORPO
             mask
         );
 
-        py::array_t<PixelType> result = py::array_t<PixelType>({output.dimZ(), output.dimY(), output.dimX()});
-        
-        py::buffer_info buf3 = result.request();
-
-        PixelType* ptr = (PixelType*) buf3.ptr;
-
-        memcpy(ptr, output.get_pointer(), output.size() * sizeof(PixelType));
-
-        result.resize({output.dimZ(), output.dimY(), output.dimX()});
-
-        return result;
+        return image3DToPyarray<PixelType>(output);
     }
 
 } // namespace pyRORPO

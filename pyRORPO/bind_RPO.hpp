@@ -5,7 +5,6 @@
 
 #include "pyRORPO.hpp"
 
-#include "bindingUtils.hpp"
 #include "RORPO/RPO.hpp"
 
 #define RPO_BINDING(x) \
@@ -37,15 +36,7 @@ namespace pyRORPO
 
         // ---------------------------- Load image data ----------------------------
 
-        Image3D<PixelType> image = pyarrayToImage3D<PixelType>(
-            imageArray,
-            spacing[0],
-            spacing[1],
-            spacing[2],
-            origin[0],
-            origin[1],
-            origin[2]
-        );
+        Image3D<PixelType> image = pyarrayToImage3D<PixelType>(imageArray, spacing, origin);
 
         // -------------------------- mask Image -----------------------------------
 
@@ -63,7 +54,6 @@ namespace pyRORPO
             }
         }
 
-
         // ############################# RPO  ######################################
 
         // the 7 RPO images with a 2-pixel border
@@ -79,9 +69,10 @@ namespace pyRORPO
 
         // ----------------------- Image3D to pyarray ------------------------------
 
-        auto asd = RPO1.dimY();
-        asd = 7;
-        py::array_t<PixelType> result = py::array_t<PixelType>({asd, RPO1.dimZ(), RPO1.dimY(), RPO1.dimX()});
+        auto nbDirections = RPO1.dimY();
+        nbDirections = 7;
+
+        py::array_t<PixelType> result = py::array_t<PixelType>({nbDirections, RPO1.dimZ(), RPO1.dimY(), RPO1.dimX()});
         
         py::buffer_info buf3 = result.request();
 
@@ -103,7 +94,7 @@ namespace pyRORPO
         memcpy(ptr + offset, RPO7.get_pointer(), RPO7.size() * sizeof(PixelType));
         offset += RPO7.size();
 
-        result.resize({asd, RPO1.dimZ(), RPO1.dimY(), RPO1.dimX()});
+        result.resize({nbDirections, RPO1.dimZ(), RPO1.dimY(), RPO1.dimX()});
 
         return result;
     }
