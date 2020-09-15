@@ -27,8 +27,4 @@ PYBIND11_MODULE(pyRORPO, m) {
     BINDINGS_OF_TYPE(float);
     BINDINGS_OF_TYPE(double );
     BINDINGS_OF_TYPE(long double);
-
-    RORPO_MULTISCALE_FROMFILE_BINDING(RORPO_multiscale_binding_fromPath) \
-    RORPO_FROMFILE_BINDING() \
-
 }
