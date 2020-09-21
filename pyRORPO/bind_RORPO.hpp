@@ -12,11 +12,11 @@
 #define RORPO_BINDING(x) \
     m.def("RORPO", &RORPO_binding<x>, "rorpo usage", \
         py::arg("image"), \
-        py::arg("spacing"), \
-        py::arg("origin"), \
         py::arg("scale"), \
+        py::arg("spacing") = py::none(), \
+        py::arg("origin") = py::none(), \
         py::arg("nbCores") = 1, \
-        py::arg("dilationSize") = 3, \
+        py::arg("dilationSize") = 2, \
         py::arg("verbose") = false, \
         py::arg("mask") = py::none() \
     ); \
@@ -25,9 +25,9 @@ namespace pyRORPO
 {
     template<typename PixelType>
     py::array_t<PixelType> RORPO_binding(py::array_t<PixelType> imageArray,
-                    std::vector<float> spacing,
-                    std::vector<double> origin,
                     int scale,
+                    std::optional<std::vector<float>> spacingOpt,
+                    std::optional<std::vector<double>> originOpt,
                     int nbCores = 1,
                     int dilationSize = 2,
                     int verbose = false,
@@ -35,6 +35,9 @@ namespace pyRORPO
     {
         std::vector<int> window(3);
         window[2] = 0;
+
+        std::vector<float> spacing = spacingOpt ? *spacingOpt : std::vector<float>{1.0, 1.0, 1.0};
+        std::vector<double> origin = originOpt ? *originOpt : std::vector<double>{1.0, 1.0, 1.0};
 
         // ---------------------------- Load image data ----------------------------
 
