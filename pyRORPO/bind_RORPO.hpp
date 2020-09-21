@@ -7,6 +7,8 @@
 
 #include "RORPO/RORPO.hpp"
 
+#include <optional>
+
 #define RORPO_BINDING(x) \
     m.def("RORPO", &RORPO_binding<x>, "rorpo usage", \
         py::arg("image"), \
@@ -16,7 +18,7 @@
         py::arg("nbCores") = 1, \
         py::arg("dilationSize") = 3, \
         py::arg("verbose") = false, \
-        py::arg("maskPath") = "" \
+        py::arg("mask") = py::none() \
     ); \
 
 namespace pyRORPO
@@ -29,7 +31,7 @@ namespace pyRORPO
                     int nbCores = 1,
                     int dilationSize = 2,
                     int verbose = false,
-                    std::string maskPath = "")
+                    std::optional<py::array_t<PixelType>> maskArray = py::none())
     {
         std::vector<int> window(3);
         window[2] = 0;
@@ -42,17 +44,8 @@ namespace pyRORPO
 
         Image3D<PixelType> mask;
 
-        if (!maskPath.empty()) // A mask image is given
-        {
-            mask = Read_Itk_Image<PixelType>(maskPath);
-
-            if (mask.dimX() != image.dimX() || mask.dimY() != image.dimY() || mask.dimZ() != image.dimZ()){
-                std::cerr<<"Size of the mask image (dimx= "<<mask.dimX()
-                        <<" dimy= "<<mask.dimY()<<" dimz="<<mask.dimZ()
-                    << ") is different from size of the input image"<<std::endl;
-                exit(1);
-            }
-        }
+        if (maskArray)
+            mask = pyarrayToImage3D<PixelType>(*maskArray, spacing, origin);
 
         // ---------------------------- Run RORPO ----------------------------------
 
