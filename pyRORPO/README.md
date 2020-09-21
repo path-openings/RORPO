@@ -17,7 +17,7 @@ FIXME: insert real documentation
 
 ## Guide
 
-All binding are defined using the following c++ files :
+All bindings are defined using the following c++ files :
 
 - `pyRORPO/pyRORPO.cpp` : The python module is defined inside `pyRORPO/pyRORPO.cpp`.
 
