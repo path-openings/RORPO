@@ -29,13 +29,10 @@ odyssee.merveille@gmail.com
     knowledge of the CeCILL-B license and that you accept its terms.
 */
 
-#include <stdlib.h>
 #include <stdint.h>
 #include <iostream>
 #include <string>
 #include <vector>
-#include <typeinfo>
-#include <sstream>
 
 #include "docopt.h"
 #include "Image/Image.hpp"
@@ -157,13 +154,13 @@ int RORPO_multiscale_usage(Image3D<PixelType> &image,
 
     // #################### Convert input image to char #######################
 
-    if (window[2] == 1 || typeid(PixelType) == typeid(float) ||
+    if (window[2] > 0 || typeid(PixelType) == typeid(float) ||
             typeid(PixelType) == typeid(double))
     {
-        if (minmax.first > (PixelType) window[0])
+        if (window[2] == 2 || minmax.first > (PixelType) window[0])
             window[0] = minmax.first;
 
-        if (minmax.second < (PixelType) window[1])
+        if (window[2] == 2 || minmax.second < (PixelType) window[1])
             window[1] = minmax.second;
 
         if(verbose){
@@ -224,7 +221,7 @@ static const char USAGE[] =
 R"(RORPO_multiscale_usage.
 
     USAGE:
-    RORPO_multiscale_usage --input=ImagePath --output=OutputPath --scaleMin=MinScale --factor=F --nbScales=NBS [--window=min,max] [--core=nbCores] [--dilationSize=Size] [--mask=maskPath] [--verbose] [--normalize] [--series]
+    RORPO_multiscale_usage --input=ImagePath --output=OutputPath --scaleMin=MinScale --factor=F --nbScales=NBS [--window=min,max] [--core=nbCores] [--dilationSize=Size] [--mask=maskPath] [--verbose] [--normalize] [--uint8] [--series]
 
     Options:
          --core=<nbCores>      Number of CPUs used for RPO computation \
@@ -237,7 +234,8 @@ R"(RORPO_multiscale_usage.
                                mask image type must be uint8.
          --verbose             Activation of a verbose mode.
          --dicom               Specify that <imagePath> is a DICOM image.
-         --normalize           return a double normalized output image
+         --normalize           Return a double normalized output image
+         --uint8               Convert input image into uint8.
         )";
 
 
@@ -276,7 +274,7 @@ int main(int argc, char **argv) {
 
     if(args["--dilationSize"])
         dilationSize = std::stoi(args["--dilationSize"].asString());
-    
+
     if(verbose)
         std::cout<<"dilation size:"<<dilationSize<<std::endl;
 
@@ -287,7 +285,8 @@ int main(int argc, char **argv) {
         window[0] = std::stoi(windowVector[0]);
         window[1] = std::stoi(windowVector[1]);
         window[2] = 1; // --window used
-    }
+    } else if (args["--uint8"].asBool())
+        window[2] = 2; // convert input image to uint8
     else
         window[2] = 0; // --window not used
 

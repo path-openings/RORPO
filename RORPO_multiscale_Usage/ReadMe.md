@@ -7,7 +7,7 @@ Compute the RORPO multiscale for blood vessels from a .nii image.
 ***An isotropic image resolution is required (cubic voxels)***.
 ```
 USAGE:
-RORPO_multiscale_usage --input=ImagePath --output=OutputPath --scaleMin=MinScale --factor=F --nbScales=NBS [--window=min,max] [--core=nbCores] [--dilationSize=Size] [--mask=maskPath] [--verbose] [--normalize] [--series]
+RORPO_multiscale_usage --input=ImagePath --output=OutputPath --scaleMin=MinScale --factor=F --nbScales=NBS [--window=min,max] [--core=nbCores] [--dilationSize=Size] [--mask=maskPath] [--verbose] [--normalize] [--uint8] [--series]
 
 Parameters:
     <imagePath>         path to .nii image (string)
@@ -23,11 +23,12 @@ Options:
                         Convert input image to uint8. Intensities inferior to window_min become 0,
                         intensities superior to window_max become 255.
                         Linear transformation between window_min and window_max.
-    --mask or :         Path to a mask image (0 for the background and 1 for the foreground).
+    --mask              Path to a mask image (0 for the background and 1 for the foreground).
                         RORPO will only be computed in this mask. The mask image type must be uint8.
-    --verbose:          Activation of a verbose mode.
+    --verbose           Activation of a verbose mode.
     --dicom             Specify that <imagePath> is a DICOM image.
     --normalize         Return a double normalized output image.
+    --uint8             Convert input image into uint8.
 ```
 
 Usage Example :
