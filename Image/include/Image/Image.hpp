@@ -248,6 +248,7 @@ public :
 
 	void clear_image(){
 		m_vImage.clear();
+		m_vImage.shrink_to_fit(); //clear a vector of all its memory
 		m_nDimX = m_nDimY = m_nDimZ = 0;
 		m_nSize = 0;
 	}
