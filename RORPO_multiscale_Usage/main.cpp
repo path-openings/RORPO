@@ -435,7 +435,8 @@ int main(int argc, char **argv) {
                                                  maskPath);
             break;
         }
-        case itk::ImageIOBase::ULONGLONG:
+#ifdef ITK_SUPPORTS_LONGLONG
+	case itk::ImageIOBase::ULONGLONG:
         {
             Image3D<unsigned long long> image = dicom?Read_Itk_Image_Series<unsigned long long>(imagePath):Read_Itk_Image<unsigned long long>(imagePath);
             error = RORPO_multiscale_usage<unsigned long long>(image,
@@ -463,6 +464,7 @@ int main(int argc, char **argv) {
                                                       maskPath);
             break;
         }
+#endif // ITK_SUPPORTS_LONGLONG
         case itk::ImageIOBase::FLOAT:
         {
             Image3D<float> image = dicom?Read_Itk_Image_Series<float>(imagePath):Read_Itk_Image<float>(imagePath);
