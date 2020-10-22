@@ -307,8 +307,10 @@ int main(int argc, char **argv) {
     }
 
     // -------------------------- Read ITK Image -----------------------------
-    Image3DMetadata imageMetadata = Read_Itk_Metadata(imagePath);
-
+    auto res = Read_Itk_Metadata(imagePath);
+    if (res == std::nullopt)
+        return 1;
+    Image3DMetadata imageMetadata = *res;
     // ---------------- Find image type and run RORPO multiscale ---------------
     int error;
     if (verbose){
