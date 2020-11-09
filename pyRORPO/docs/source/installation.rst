@@ -41,7 +41,7 @@ The generated shared library is in pyRORPO directory.
 
 	import sys
 	PATH_TO_SHARED_LIBRARY_DIR = "RORPO/build/pyRORPO/"
-	sys.path.insert(1, PATH_TO_SHARED_LIBRARY_DIR)
+	sys.path.append(PATH_TO_SHARED_LIBRARY_DIR)
 
 Then import the module
 
