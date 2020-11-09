@@ -3,8 +3,6 @@ copyright = '2020, Odyssée Merveille, Hugues Talbot, Laurent Najman, Nicolas Pa
 author = 'Odyssée Merveille, Hugues Talbot, Laurent Najman, Nicolas Passat'
 
 extensions = [
-	'IPython.sphinxext.ipython_directive',
-	'IPython.sphinxext.ipython_console_highlighting',
 	'sphinx_rtd_theme',
 ]
 
