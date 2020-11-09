@@ -5,8 +5,7 @@ Compute the RORPO multiscale for blood vessels from a .nii image.
 **Accepted type**: int8, uint8, int16, uint16, int32, uint32, float
 
 ***An isotropic image resolution is required (cubic voxels)***.
-```
-USAGE:
+```USAGE:
 RORPO_multiscale_usage --input=ImagePath --output=OutputPath --scaleMin=MinScale --factor=F --nbScales=NBS [--window=min,max] [--core=nbCores] [--dilationSize=Size] [--mask=maskPath] [--verbose] [--normalize] [--uint8] [--series]
 
 Parameters:
@@ -33,12 +32,12 @@ Options:
 
 Usage Example :
 ```
-./RORPO_multiscale_usage input.nii output.nii 40 1.32 4
+./RORPO_multiscale_usage --input input.nii --output output.nii --scaleMin 40 --factor 1.32 --nbScales 4
 ```
 
 Usage Example :
 ```
-./RORPO_multiscale_usage input.nii output.nii 40 1.32 4 --window 0,255 --verbose --core 4
+./RORPO_multiscale_usage --input input.nii --output output.nii --scaleMin 40 --factor 1.32 --nbScales 4 --window 0,255 --verbose --core 4
 ```
 
 ## Test

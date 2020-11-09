@@ -48,20 +48,26 @@ odyssee.merveille@gmail.com
 
 // ############################# MHA Image ##############################
 
-struct Image3DMetadata
-{
-	uint pixelType;
-	std::string pixelTypeString;
-	uint nbDimensions;
+struct Image3DMetadata {
+    itk::IOComponentEnum pixelType;
+    std::string pixelTypeString;
+    uint nbDimensions;
 };
 
-Image3DMetadata Read_Itk_Metadata(const std::string& image_path)
-{
-	itk::ImageIOBase::Pointer imageIO = itk::ImageIOFactory::CreateImageIO( image_path.c_str(), itk::ImageIOFactory::ReadMode);
-	imageIO->SetFileName(image_path);
-	imageIO->ReadImageInformation();
 
-	return { imageIO->GetComponentType(), imageIO->GetComponentTypeAsString(imageIO->GetComponentType()), imageIO->GetNumberOfDimensions() };
+std::optional<Image3DMetadata> Read_Itk_Metadata(const std::string &image_path) {
+    itk::ImageIOBase::Pointer imageIO = itk::ImageIOFactory::CreateImageIO(image_path.c_str(),
+                                                                           itk::ImageIOFactory::ReadMode);
+    if (imageIO == nullptr) {
+        std::cerr << "Error: file not found." << std::endl;
+        return std::nullopt;
+    }
+    imageIO->SetFileName(image_path.c_str());
+    imageIO->ReadImageInformation();
+
+    return std::optional<Image3DMetadata>(
+            {imageIO->GetComponentType(), imageIO->GetComponentTypeAsString(imageIO->GetComponentType()),
+             imageIO->GetNumberOfDimensions()});
 }
 
 template<typename PixelType>

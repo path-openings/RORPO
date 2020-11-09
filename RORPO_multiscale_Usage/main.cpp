@@ -300,15 +300,18 @@ int main(int argc, char **argv) {
         scaleList[i] = int(scaleMin * pow(factor, i));
 
     if (verbose){
-        std::cout<<"Scales : ";
-        std::cout<<scaleList[0];
+        std::cout << "Scales : ";
+        std::cout << scaleList[0];
         for (int i = 1; i < nbScales; ++i)
-            std::cout<<','<<scaleList[i];
+            std::cout << ',' << scaleList[i];
+        std::cout << std::endl;
     }
 
     // -------------------------- Read ITK Image -----------------------------
-    Image3DMetadata imageMetadata = Read_Itk_Metadata(imagePath);
-
+    auto res = Read_Itk_Metadata(imagePath);
+    if (res == std::nullopt)
+        return 1;
+    Image3DMetadata imageMetadata = *res;
     // ---------------- Find image type and run RORPO multiscale ---------------
     int error;
     if (verbose){
