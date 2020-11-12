@@ -11,8 +11,8 @@ namespace py = pybind11;
 namespace pyRORPO
 {
     template<typename PixelType>
-    inline Image3D<PixelType> pyarrayToImage3D(py::array_t<PixelType> imageInput, std::vector<float> spacing,
-        std::vector<double> origin)
+    inline Image3D<PixelType> pyarrayToImage3D(py::array_t<PixelType>& imageInput, std::vector<float>& spacing,
+        std::vector<double>& origin)
     {
         auto bufImage = imageInput.request();
 
@@ -34,7 +34,7 @@ namespace pyRORPO
     }
 
     template<typename PixelType>
-    inline py::array_t<PixelType> image3DToPyarray(Image3D<PixelType> image)
+    inline py::array_t<PixelType> image3DToPyarray(Image3D<PixelType>& image)
     {
         py::array_t<PixelType> result = py::array_t<PixelType>({image.dimZ(), image.dimY(), image.dimX()});
         

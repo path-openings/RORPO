@@ -40,6 +40,7 @@ odyssee.merveille@gmail.com
 #include <algorithm>
 #include <omp.h>
 #include <cstdlib>
+#include <cmath>
 
 #include "RORPO/sorting.hpp"
 #include "RORPO/Algo.hpp"
@@ -48,7 +49,7 @@ odyssee.merveille@gmail.com
 
 
 template<typename T, typename MaskType>
-Image3D<T> RORPO(const Image3D<T> &image, int L, int nbCores, int dilationSize, Image3D<MaskType> &mask) {
+Image3D<T> RORPO(const Image3D<T> &image, int L, int nbCores, int dilationSize, Image3D<MaskType> &mask, std::shared_ptr<std::vector<int>> directions = nullptr) {
 
     // ############################# RPO  ######################################
 
@@ -61,8 +62,7 @@ Image3D<T> RORPO(const Image3D<T> &image, int L, int nbCores, int dilationSize, 
     Image3D<T> RPO6(image.dimX() + 4, image.dimY() + 4, image.dimZ() + 4, 2);
     Image3D<T> RPO7(image.dimX() + 4, image.dimY() + 4, image.dimZ() + 4, 2);
 
-    const std::array<std::vector<int>, 7> orientations = RPO(image, L, RPO1, RPO2, RPO3, RPO4, RPO5, RPO6, RPO7,
-                                                             nbCores, dilationSize, mask);
+    auto orientationsRPO = RPO(image, L, RPO1, RPO2, RPO3, RPO4, RPO5, RPO6, RPO7, nbCores, dilationSize, mask);
 
     // ################### Limit Orientations Treatment #######################
 
@@ -179,6 +179,66 @@ Image3D<T> RORPO(const Image3D<T> &image, int L, int nbCores, int dilationSize, 
     RPO5.clear_image();
     RPO6.clear_image();
     RPO7.clear_image();
+
+    // ######################## Compute directions ############################
+
+    // ------------------------ Pointwise Rank Filter -------------------------
+
+    if (directions) {
+        for (size_t i = 0; i < orientationsRPO[0].size(); i++) {
+
+            // Pointwise Rank Filter --------------------------------
+            std::vector<std::pair<T, int>> pixel{
+                std::make_pair(RPOt1(i), 0),
+                std::make_pair(RPOt2(i), 1),
+                std::make_pair(RPOt3(i), 2),
+                std::make_pair(RPOt4(i), 3),
+                std::make_pair(RPOt5(i), 4),
+                std::make_pair(RPOt6(i), 5),
+                std::make_pair(RPOt7(i), 6)
+            };
+
+            std::sort(pixel.begin(), pixel.end(),
+                [&](const auto& a, const auto& b) {
+                    return a.first > b.first;
+                });
+
+            float stdMin = 99999999;
+            int interestNb = 0; 
+            
+            // Compute Std and find orientations of interest --------
+            for (size_t k = 0; k < 3; k++) {
+                float stdP = computeSTD(pixel.begin(), pixel.begin() + k + 1);
+                float stdO = computeSTD(pixel.begin() + k + 1, pixel.end());
+
+                float stdSum = stdP + stdO;
+
+                if (stdSum < stdMin) {
+                    stdMin = stdSum;
+                    interestNb = k;
+                }
+            }
+
+            std::array<std::vector<int>, 7> orientations = {
+                    std::vector<int>{1, 0, 0},//1
+                    std::vector<int>{0, 1, 0},//2
+                    std::vector<int>{0, 0, 1},//3
+                    std::vector<int>{1, 1, 1},//4
+                    std::vector<int>{1, 1, -1},//5
+                    std::vector<int>{-1, 1, 1},//6
+                    std::vector<int>{-1, 1, -1},//7
+            };
+
+            // Combine orientations of interest to find direction ---
+            std::vector<int> direction = orientations[pixel[0].second];
+            for (size_t j = 1; j <= interestNb; j++) {
+                std::transform(direction.begin(), direction.end(), orientations[pixel[j].second].begin(),
+                    direction.begin(), std::plus<int>());
+            }
+
+            std::copy(direction.begin(), direction.end(), directions->begin() + i * 3);
+        }
+    } // directions
 
     // Pointwise rank filter
     std::vector<std::array<uint8_t, 7>> o_indices(RPOt1.size()); //orientation indices
