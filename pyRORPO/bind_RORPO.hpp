@@ -7,6 +7,7 @@
 
 #include "RORPO/RORPO.hpp"
 
+#include <memory>
 #include <optional>
 
 #define RORPO_BINDING(x) \
@@ -18,7 +19,8 @@
         py::arg("nbCores") = 1, \
         py::arg("dilationSize") = 2, \
         py::arg("verbose") = false, \
-        py::arg("mask") = py::none() \
+        py::arg("mask") = py::none(), \
+        py::arg("directions") = false \
     ); \
 
 namespace pyRORPO
@@ -31,7 +33,8 @@ namespace pyRORPO
                     int nbCores = 1,
                     int dilationSize = 2,
                     int verbose = false,
-                    std::optional<py::array_t<PixelType>> maskArray = py::none())
+                    std::optional<py::array_t<PixelType>> maskArray = py::none(),
+                    bool directions = false)
     {
         std::vector<int> window(3);
         window[2] = 0;
@@ -42,6 +45,7 @@ namespace pyRORPO
         // ---------------------------- Load image data ----------------------------
 
         Image3D<PixelType> image = pyarrayToImage3D<PixelType>(imageArray, spacing, origin);
+        std::cout << "after arr2img: " << image.get_data()[0] << " : " << image.get_data()[1] <<  " : " <<image(2) <<  " : " <<image(3) <<  " : " <<image(4) << " : " << image(5) << std::endl;
 
         // -------------------------- mask Image -----------------------------------
 
@@ -49,6 +53,14 @@ namespace pyRORPO
 
         if (maskArray)
             mask = pyarrayToImage3D<PixelType>(*maskArray, spacing, origin);
+
+        // ------ Directions setup ----------
+
+        std::shared_ptr<std::vector<int>> directionsResult = nullptr;
+
+        if (directions) {
+            directionsResult = std::make_shared<std::vector<int>>(std::vector<int>(image.size() * 3, 0));
+        }
 
         // ---------------------------- Run RORPO ----------------------------------
 
@@ -58,8 +70,29 @@ namespace pyRORPO
             nbCores,
             dilationSize,
             //verbose,
-            mask
+            mask,
+            directionsResult
         );
+
+        // ---------------------------- Return results ------------------------------
+
+        if (directions) {
+            std::vector<PixelType> directionsImgType(directionsResult->begin(), directionsResult->end());
+
+            auto nbDim = output.dimY();
+            nbDim = 3;
+
+            py::array_t<PixelType> result = py::array_t<PixelType>({output.dimZ(), output.dimY(), output.dimX(), nbDim});
+
+            py::buffer_info buf3 = result.request();
+            PixelType* ptr = (PixelType*) buf3.ptr;
+
+            memcpy(ptr, directionsImgType.data(), directionsImgType.size() * sizeof(PixelType));
+
+            result.resize({output.dimZ(), output.dimY(), output.dimX(), nbDim});
+
+            return result;
+        }
 
         return image3DToPyarray<PixelType>(output);
     }
