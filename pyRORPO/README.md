@@ -6,6 +6,7 @@
 All resources required to generete the python module are inside the directory `/pyRORPO`.
 
 ## Usage
+A detailed documentation of pyRORPO module is [here](https://rorpo.readthedocs.io/).
 
 Building target `pyRORPO` will generate a dynamic library. This library can be imported as a python module :
 
