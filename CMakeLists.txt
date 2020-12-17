@@ -30,9 +30,13 @@ include_directories(
 if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Release")
 	enable_testing()
 endif()
+
 add_subdirectory(libRORPO)
-add_subdirectory(docopt)
-add_subdirectory(RORPO_multiscale_Usage)
+
+if (NOT BUILD_PYRORPO)
+	add_subdirectory(docopt)
+	add_subdirectory(RORPO_multiscale_Usage)
+endif()
 
 if (BUILD_PYRORPO)
 	message("BUILD_PYRORPO is ON")
