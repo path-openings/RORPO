@@ -100,7 +100,7 @@ template<typename PixelType>
 int RORPO_multiscale_usage(Image3D<PixelType> &image,
                            std::string outputPath,
                            std::vector<int> &scaleList,
-                           std::vector<int> &window,
+                           std::vector<double> &window,
                            int nbCores,
                            int dilationSize,
                            bool verbose,
@@ -157,12 +157,18 @@ int RORPO_multiscale_usage(Image3D<PixelType> &image,
     if (window[2] > 0 || typeid(PixelType) == typeid(float) ||
             typeid(PixelType) == typeid(double))
     {
-        if (window[2] == 2 || minmax.first > (PixelType) window[0])
+        if (window[2] == 1) { //window option
+            if (minmax.first > (PixelType) window[0])
+                window[0] = minmax.first;
+
+            if (minmax.second < (PixelType) window[1]) {
+                window[1] = minmax.second;
+            }
+        }
+        else {
             window[0] = minmax.first;
-
-        if (window[2] == 2 || minmax.second < (PixelType) window[1])
             window[1] = minmax.second;
-
+        }
         if(verbose){
             std::cout<<"Convert image intensity range from: [";
             std::cout<<minmax.first<<", "<<minmax.second<<"] to [";
@@ -258,7 +264,7 @@ int main(int argc, char **argv) {
     float scaleMin = std::stoi(args["--scaleMin"].asString());
     float factor = std::stof(args["--factor"].asString());
     int nbScales = std::stoi(args["--nbScales"].asString());
-    std::vector<int> window(3);
+    std::vector<double> window(3);
     int nbCores = 1;
     int dilationSize = 3;
     std::string maskPath;
@@ -281,9 +287,13 @@ int main(int argc, char **argv) {
     if (args["--window"]){
         std::vector<std::string> windowVector =
                 split(args["--window"].asString(),',');
-
-        window[0] = std::stoi(windowVector[0]);
-        window[1] = std::stoi(windowVector[1]);
+        if (windowVector.size() != 2)
+        {
+            std::cerr << "ERROR: --window=<double>,<double> but received: " << args["--window"].asString() <<std::endl;
+            return 1;
+        }
+        window[0] = std::stod(windowVector[0]);
+        window[1] = std::stod(windowVector[1]);
         window[2] = 1; // --window used
     } else if (args["--uint8"].asBool())
         window[2] = 2; // convert input image to uint8
