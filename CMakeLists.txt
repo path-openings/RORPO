@@ -1,6 +1,8 @@
 project(RORPO)
 cmake_minimum_required(VERSION 3.2)
 
+option(BUILD_PYRORPO "Enable pyRORPO" OFF)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -28,7 +30,15 @@ include_directories(
 if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Release")
 	enable_testing()
 endif()
+
 add_subdirectory(libRORPO)
-add_subdirectory(docopt)
-add_subdirectory(RORPO_multiscale_Usage)
-add_subdirectory(pyRORPO)
+
+if (NOT BUILD_PYRORPO)
+	add_subdirectory(docopt)
+	add_subdirectory(RORPO_multiscale_Usage)
+endif()
+
+if (BUILD_PYRORPO)
+	message("BUILD_PYRORPO is ON")
+	add_subdirectory(pyRORPO)
+endif ()

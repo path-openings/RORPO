@@ -3,16 +3,36 @@ Welcome to libRORPO, a mathematical morphology library for Path Operators. RORPO
 is a morphological vesselness operator, meant to detect vessels and other tubular
 structures in medical images.
 
-To compile this code you will need to also install the pybind11 submodule. This
-is achieved with the command:
-```
-git submodule update --init
-```
-
 **WARNING :
 All images are expected to have an isotropic image resolution (cubic voxels).
 The software will produce a result if this not the case but the interpretation
 of this result will be questionable.**
+
+## Build
+
+```
+cmake [-DITK_DIR=<path/to/itk>|-DBUILD_PYRORPO=ON] <path-to-source>
+make [libRORPO | RORPO_multiscale_Usage | pyRORPO]
+```
+
+### Lib RORPO
+
+A compiled version of ITK is required to build:
+```
+cmake -DITK_DIR=</path/to/itk> ..
+```
+
+### pyRORPO
+
+pyRORPO requires access to pybind11 submodule:
+```
+git submodule update --init
+```
+
+Except that, it has no other dependencies so use the BUILD_PYRORPO parameter when configuring to avoid them:
+```
+cmake -DBUILD_PYRORPO=ON <path-to-source>
+```
 
 ## File PO.hpp
 **PO_3D**: Compute the Path Opening operator in one orientation. The 7 orientations are defined in the function RPO.

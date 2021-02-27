@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Image/Image.hpp"
-#include "Image/Image_IO_ITK.hpp"
 
 #include "pyRORPO.hpp"
 

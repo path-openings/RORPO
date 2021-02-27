@@ -11,10 +11,6 @@ if(OPENMP_FOUND)
 endif()
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 
-# Find ITK
-find_package(ITK REQUIRED)
-include(${ITK_USE_FILE})
-
 add_subdirectory("${PROJECT_SOURCE_DIR}/pybind11")
 
 pybind11_add_module(${PROJECT_NAME}
@@ -22,4 +18,4 @@ pybind11_add_module(${PROJECT_NAME}
 )
 
 # LINK REQUIRED LIBS
-target_link_libraries( ${PROJECT_NAME} PRIVATE RORPO ${ITK_LIBRARIES} )
+target_link_libraries(${PROJECT_NAME} PRIVATE RORPO)
