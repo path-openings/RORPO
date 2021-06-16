@@ -17,6 +17,8 @@ FIXME: insert real documentation
 
 ## Guide
 
+PyRORPO documentation: https://rorpo.readthedocs.io/en/latest/
+
 All bindings are defined using the following c++ files :
 
 - `pyRORPO/pyRORPO.cpp` : The python module is defined inside `pyRORPO/pyRORPO.cpp`.
