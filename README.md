@@ -3,11 +3,9 @@ Welcome to libRORPO, a mathematical morphology library for Path Operators. RORPO
 is a morphological vesselness operator, meant to detect vessels and other tubular
 structures in medical images.
 
-To compile this code you will need to also install the pybind11 submodule. This
-is achieved with the command:
-```
-git submodule update --init
-```
+This library comes with the following optional bindings :
+- A python interface using pybind11.
+- A [3DSlicer](https://www.slicer.org/) interface to use RORPO in the interactive 3D environment of Slicer.
 
 **WARNING :
 All images are expected to have an isotropic image resolution (cubic voxels).

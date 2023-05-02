@@ -1,5 +1,5 @@
-project(RORPO)
 cmake_minimum_required(VERSION 3.2)
+project(RORPO VERSION 1.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -19,16 +19,29 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 message("Build Type: " ${CMAKE_BUILD_TYPE})
 
+set(PYTHON_BINDING ON CACHE BOOL "enable python binding")
+set(3DSLICER_BINDING ON CACHE BOOL "enable 3DSlicer module")
+
 include_directories(
-            libRORPO/include
-            Image/include
-            docopt
-            pyRORPO)
+	    libRORPO/include
+	    Image/include
+	    docopt)
 
 if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Release")
 	enable_testing()
 endif()
+
 add_subdirectory(libRORPO)
+
+if(NOT 3DSLICER_BINDING)
 add_subdirectory(docopt)
+endif()
+
 add_subdirectory(RORPO_multiscale_Usage)
-add_subdirectory(pyRORPO)
+
+# retrieving pybind11
+if(PYTHON_BINDING)
+	include_directories(pyRORPO)
+	add_subdirectory(pyRORPO)
+endif()
+

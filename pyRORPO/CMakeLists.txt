@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.2)
 
 project(pyRORPO)
 
@@ -15,7 +15,16 @@ endif()
 find_package(ITK REQUIRED)
 include(${ITK_USE_FILE})
 
-add_subdirectory("${PROJECT_SOURCE_DIR}/pybind11")
+message("Fetching pybind11")
+include(FetchContent)
+FetchContent_Declare(
+	pybind11
+	GIT_REPOSITORY https://github.com/pybind/pybind11.git
+	)
+FetchContent_MakeAvailable(pybind11)
+
+
+# add_subdirectory("${PROJECT_SOURCE_DIR}/pybind11")
 
 pybind11_add_module(${PROJECT_NAME}
     pyRORPO.cpp

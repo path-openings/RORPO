@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<executable>
+    <category>Vesselness</category>
+    <title>RORPO Vesselness Filter</title>
+    <description>
+        RORPO Vesselness filter, morphological filter based on path opening.
+    </description>
+    <version>1.0</version>
+    <documentation-url></documentation-url>
+    <license></license>
+    <contributor>Jonas Lamy</contributor>
+
+    <parameters>
+        <label>
+            Scale space parameters
+        </label>
+        <description>
+            Scale space is defined by the length of the initial path operator, the number of path elements and the multiplicative length coefficient between two consecutives paths.
+        </description>
+
+        <integer>
+            <name>scaleMin</name>
+            <longflag>scaleMin</longflag>
+            <description>minimum path size</description>
+            <label>minimum path size</label>
+            <default>100</default>
+            <constraints>
+                <minimum>0</minimum>
+                <maximum>800</maximum>
+                <step>1</step>
+            </constraints>
+        </integer>
+
+        <double>
+            <name>factor</name>
+            <longflag>factor</longflag>
+            <description>multiplicative path factor</description>
+            <label>factor</label>
+            <default>1.5</default>
+            <constraints>
+                <minimum>0</minimum>
+                <maximum>10</maximum>
+                <step>.01</step>
+            </constraints>
+        </double>
+
+        <integer>
+            <name>nbScales</name>
+            <longflag>nbScales</longflag>
+            <description>Number of scales </description>
+            <label>Scales</label>
+            <default>3</default>
+            <constraints>
+                <minimum>2</minimum>
+                <maximum>30</maximum>
+                <step>1</step>
+            </constraints>
+        </integer>
+
+        <integer>
+            <name>dilationSize</name>
+            <longflag>dilationSize</longflag>
+            <description>Size of the structuring element for dilatation. Useful for noise mitigation</description>
+            <label>dilationSize</label>
+            <default>0</default>
+            <constraints>
+                <minimum>0</minimum>
+                <maximum>50</maximum>
+                <step>1</step>
+            </constraints>
+        </integer>
+
+    </parameters>
+
+    <parameters>
+        <label>
+            RORPO parameters
+        </label>
+	<boolean>
+	    <name>normalize</name>
+	    <label>normalize</label>
+	    <longflag>normalize</longflag>
+	    <default>1</default>
+	</boolean>
+	<integer>
+	    <name>nbCores</name>
+	    <label>nbCores</label>
+	    <longflag>nbCores</longflag>
+	    <default>7</default>
+	    <constraints>
+		<minimum>1</minimum>
+		<maximum>16</maximum>
+		<step>1</step>
+	    </constraints>
+	</integer>
+	<integer-vector>
+	    <name>window</name>
+	    <label>window</label>
+	    <longflag>window</longflag>
+	    <default>0,255</default>
+	    <constraints>
+		<minimum>-1000</minimum>
+		<maximum>1000</maximum>
+		<step>1</step>
+	    </constraints>
+	</integer-vector>
+	<boolean>
+	    <name>verbose</name>
+	    <label>verbose</label>
+	    <longflag>verbose</longflag>
+	    <default>0</default>
+	</boolean>
+    </parameters>
+
+    <parameters>
+        <label>IO</label>
+        <description>Input/output images</description>
+        <image>
+            <name>inputVolume</name>
+            <label>Input Volume</label>
+            <channel>input</channel>
+            <longflag>input</longflag>
+            <description>Input volume to be filtered</description>
+        </image>
+        <label>IO</label>
+        <description>mask image</description>
+        <image>
+            <name>maskVolume</name>
+            <label>mask volume</label>
+            <channel>input</channel>
+            <longflag>mask</longflag>
+            <description>mask to be applied on the vesselness</description>
+        </image>
+        <image>
+            <name>outputVolume</name>
+            <label>Output Volume</label>
+            <channel>output</channel>
+            <flag>o</flag>
+            <longflag>output</longflag>
+            <description>Output filtered</description>
+        </image>
+    </parameters>
+</executable>

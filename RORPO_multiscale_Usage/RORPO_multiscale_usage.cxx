@@ -33,14 +33,24 @@ odyssee.merveille@gmail.com
 #include <iostream>
 #include <string>
 #include <vector>
+#include <sys/stat.h>
 
-#include "docopt.h"
 #include "Image/Image.hpp"
 #include "Image/Image_IO_ITK.hpp"
 #include "RORPO/RORPO_multiscale.hpp"
 
+#ifdef SLICER_BINDING
+  #include "RORPO_multiscale_usageCLP.h"
+#else
+  #include "docopt.h"
+#endif
 typedef uint16_t u_int16_t;
 
+bool isDir(std::string fileName) {
+  struct stat buf;
+  stat(fileName.c_str(), &buf);
+  return S_ISDIR(buf.st_mode);
+}
 
 // Split a string
 std::vector<std::string> split(std::string str, char delimiter) {
@@ -98,14 +108,14 @@ void normalize_and_write_output(std::string outputPath, bool verbose, Image3D<Pi
 
 template<typename PixelType>
 int RORPO_multiscale_usage(Image3D<PixelType> &image,
-                           std::string outputPath,
+                           std::string outputVolume,
                            std::vector<int> &scaleList,
                            std::vector<int> &window,
                            int nbCores,
                            int dilationSize,
                            bool verbose,
                            bool normalize,
-                           std::string maskPath) {
+                           std::string maskVolume) {
     unsigned int dimz = image.dimZ();
     unsigned int dimy = image.dimY();
     unsigned int dimx= image.dimX();
@@ -140,9 +150,9 @@ int RORPO_multiscale_usage(Image3D<PixelType> &image,
 
     Image3D<uint8_t> mask;
 
-    if (!maskPath.empty()) // A mask image is given
+    if (!maskVolume.empty()) // A mask image is given
 	{
-        mask = Read_Itk_Image<uint8_t>(maskPath);
+        mask = Read_Itk_Image<uint8_t>(maskVolume);
 
         if (mask.dimX() != dimx || mask.dimY() != dimy || mask.dimZ() != dimz){
             std::cerr<<"Size of the mask image (dimx= "<<mask.dimX()
@@ -187,9 +197,9 @@ int RORPO_multiscale_usage(Image3D<PixelType> &image,
                                                    verbose,
                                                    mask);
         if (normalize)
-            normalize_and_write_output<uint8_t>(outputPath, verbose, multiscale);
+            normalize_and_write_output<uint8_t>(outputVolume, verbose, multiscale);
         else
-            Write_Itk_Image<uint8_t>(multiscale, outputPath);
+            Write_Itk_Image<uint8_t>(multiscale, outputVolume);
     }
 
     // ################## Keep input image in PixelType ########################
@@ -207,29 +217,31 @@ int RORPO_multiscale_usage(Image3D<PixelType> &image,
 
         // normalize output
         if (normalize)
-            normalize_and_write_output(outputPath, verbose, multiscale);
+            normalize_and_write_output(outputVolume, verbose, multiscale);
         else
-            Write_Itk_Image<PixelType>(multiscale, outputPath);
+            Write_Itk_Image<PixelType>(multiscale, outputVolume);
     }
 
     return 0;
 } // RORPO_multiscale_usage
 
-
+#ifndef SLICER_BINDING
 // Parse command line with docopt
+
+
 static const char USAGE[] =
 R"(RORPO_multiscale_usage.
 
     USAGE:
-    RORPO_multiscale_usage --input=ImagePath --output=OutputPath --scaleMin=MinScale --factor=F --nbScales=NBS [--window=min,max] [--core=nbCores] [--dilationSize=Size] [--mask=maskPath] [--verbose] [--normalize] [--uint8] [--series]
+    RORPO_multiscale_usage --input=ImagePath --output=OutputPath --scaleMin=MinScale --factor=F --nbScales=NBS [--window=min,max] [--nbCores=nbCores] [--dilationSize=Size] [--mask=maskVolume] [--verbose] [--normalize] [--uint8] [--series]
 
     Options:
-         --core=<nbCores>      Number of CPUs used for RPO computation \
+         --nbCores=<nbCores>      Number of CPUs used for RPO computation \
          --dilationSize=<Size> Size of the dilation for the noise robustness step \
          --window=min,max      Convert intensity range [min, max] of the input \
                                image to [0,255] and convert to uint8 image\
                                (strongly decrease computation time).
-         --mask=maskPath       Path to a mask for the input image \
+         --mask=maskVolume       Path to a mask for the input image \
                                (0 for the background; not 0 for the foreground).\
                                mask image type must be uint8.
          --verbose             Activation of a verbose mode.
@@ -237,10 +249,14 @@ R"(RORPO_multiscale_usage.
          --normalize           Return a double normalized output image
          --uint8               Convert input image into uint8.
         )";
-
+#endif
 
 int main(int argc, char **argv) {
+  #ifdef SLICER_BINDING
+  PARSE_ARGS;
+  #endif
 
+   #ifndef SLICER_BINDING
     // -------------- Parse arguments and initialize parameters ----------------
     std::map<std::string, docopt::value> args = docopt::docopt(USAGE,
                                                   {argv + 1, argv + argc},
@@ -253,21 +269,20 @@ int main(int argc, char **argv) {
         std::cout << arg.first << ": " << arg.second << std::endl;
     }
 
-    std::string imagePath = args["--input"].asString();
-    std::string outputPath = args["--output"].asString();
+    std::string inputVolume = args["--input"].asString();
+    std::string outputVolume = args["--output"].asString();
     float scaleMin = std::stoi(args["--scaleMin"].asString());
     float factor = std::stof(args["--factor"].asString());
     int nbScales = std::stoi(args["--nbScales"].asString());
     std::vector<int> window(3);
     int nbCores = 1;
     int dilationSize = 3;
-    std::string maskPath;
+    std::string maskVolume;
     bool verbose = args["--verbose"].asBool();
     bool normalize = args["--normalize"].asBool();
-    bool dicom = args.count("--dicom");
-
+    
     if (args["--mask"])
-        maskPath = args["--mask"].asString();
+        maskVolume = args["--mask"].asString();
 
     if (args["--core"])
         nbCores = std::stoi(args["--core"].asString());
@@ -289,7 +304,7 @@ int main(int argc, char **argv) {
         window[2] = 2; // convert input image to uint8
     else
         window[2] = 0; // --window not used
-
+    #endif
 
     // -------------------------- Scales computation ---------------------------
 
@@ -308,7 +323,7 @@ int main(int argc, char **argv) {
     }
 
     // -------------------------- Read ITK Image -----------------------------
-    auto res = Read_Itk_Metadata(imagePath);
+    auto res = Read_Itk_Metadata(inputVolume);
     if (res == std::nullopt)
         return 1;
     Image3DMetadata imageMetadata = *res;
@@ -325,175 +340,177 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    std::error_code ec; // For using the non-throwing overloads of functions below.
+    bool dicom = isDir(inputVolume); // check if path is a directory (DICOM) of a file (.nii,.nrrd,etc.)
     switch (imageMetadata.pixelType){
         case itk::ImageIOBase::UCHAR:
         {
-            Image3D<unsigned char> image = dicom?Read_Itk_Image_Series<unsigned char>(imagePath):Read_Itk_Image<unsigned char>(imagePath);
+            Image3D<unsigned char> image = dicom?Read_Itk_Image_Series<unsigned char>(inputVolume):Read_Itk_Image<unsigned char>(inputVolume);
             error = RORPO_multiscale_usage<unsigned char>(image,
-                                                          outputPath,
+                                                          outputVolume,
                                                           scaleList,
                                                           window,
                                                           nbCores,
                                                           dilationSize,
                                                           verbose,
                                                           normalize,
-                                                          maskPath);
+                                                          maskVolume);
             break;
         }
         case itk::ImageIOBase::CHAR:
         {
-            Image3D<char> image = dicom?Read_Itk_Image_Series<char>(imagePath):Read_Itk_Image<char>(imagePath);
+            Image3D<char> image = dicom?Read_Itk_Image_Series<char>(inputVolume):Read_Itk_Image<char>(inputVolume);
             error = RORPO_multiscale_usage<char>(image,
-                                                 outputPath,
+                                                 outputVolume,
                                                  scaleList,
                                                  window,
                                                  nbCores,
                                                  dilationSize,
                                                  verbose,
                                                  normalize,
-                                                 maskPath);
+                                                 maskVolume);
             break;
         }
         case itk::ImageIOBase::USHORT:
         {
-            Image3D<unsigned short> image = dicom?Read_Itk_Image_Series<unsigned short>(imagePath):Read_Itk_Image<unsigned short>(imagePath);
+            Image3D<unsigned short> image = dicom?Read_Itk_Image_Series<unsigned short>(inputVolume):Read_Itk_Image<unsigned short>(inputVolume);
             error = RORPO_multiscale_usage<unsigned short>(image,
-                                                           outputPath,
+                                                           outputVolume,
                                                            scaleList,
                                                            window,
                                                            nbCores,
                                                            dilationSize,
                                                            verbose,
                                                            normalize,
-                                                           maskPath);
+                                                           maskVolume);
             break;
         }
         case itk::ImageIOBase::SHORT:
         {
-            Image3D<short> image = dicom?Read_Itk_Image_Series<short>(imagePath):Read_Itk_Image<short>(imagePath);
+            Image3D<short> image = dicom?Read_Itk_Image_Series<short>(inputVolume):Read_Itk_Image<short>(inputVolume);
             error = RORPO_multiscale_usage<short>(image,
-                                                  outputPath,
+                                                  outputVolume,
                                                   scaleList,
                                                   window,
                                                   nbCores,
                                                   dilationSize,
                                                   verbose,
                                                   normalize,
-                                                  maskPath);
+                                                  maskVolume);
             break;
         }
         case itk::ImageIOBase::UINT:
         {
-            Image3D<unsigned int> image = dicom?Read_Itk_Image_Series<unsigned int>(imagePath):Read_Itk_Image<unsigned int>(imagePath);
+            Image3D<unsigned int> image = dicom?Read_Itk_Image_Series<unsigned int>(inputVolume):Read_Itk_Image<unsigned int>(inputVolume);
             error = RORPO_multiscale_usage<unsigned int>(image,
-                                                         outputPath,
+                                                         outputVolume,
                                                          scaleList,
                                                          window,
                                                          nbCores,
                                                          dilationSize,
                                                          verbose,
                                                          normalize,
-                                                         maskPath);
+                                                         maskVolume);
             break;
         }
         case itk::ImageIOBase::INT:
         {
-            Image3D<int> image = dicom?Read_Itk_Image_Series<int>(imagePath):Read_Itk_Image<int>(imagePath);
+            Image3D<int> image = dicom?Read_Itk_Image_Series<int>(inputVolume):Read_Itk_Image<int>(inputVolume);
             error = RORPO_multiscale_usage<int>(image,
-                                                outputPath,
+                                                outputVolume,
                                                 scaleList,
                                                 window,
                                                 nbCores,
                                                 dilationSize,
                                                 verbose,
                                                 normalize,
-                                                maskPath);
+                                                maskVolume);
             break;
         }
         case itk::ImageIOBase::ULONG:
         {
-            Image3D<unsigned long> image = dicom?Read_Itk_Image_Series<unsigned long>(imagePath):Read_Itk_Image<unsigned long>(imagePath);
+            Image3D<unsigned long> image = dicom?Read_Itk_Image_Series<unsigned long>(inputVolume):Read_Itk_Image<unsigned long>(inputVolume);
             error = RORPO_multiscale_usage<unsigned long>(image,
-                                                          outputPath,
+                                                          outputVolume,
                                                           scaleList,
                                                           window,
                                                           nbCores,
                                                           dilationSize,
                                                           verbose,
                                                           normalize,
-                                                          maskPath);
+                                                          maskVolume);
             break;
         }
         case itk::ImageIOBase::LONG:
         {
-            Image3D<long> image = dicom?Read_Itk_Image_Series<long>(imagePath):Read_Itk_Image<long>(imagePath);
+            Image3D<long> image = dicom?Read_Itk_Image_Series<long>(inputVolume):Read_Itk_Image<long>(inputVolume);
             error = RORPO_multiscale_usage<long>(image,
-                                                 outputPath,
+                                                 outputVolume,
                                                  scaleList,
                                                  window,
                                                  nbCores,
                                                  dilationSize,
                                                  verbose,
                                                  normalize,
-                                                 maskPath);
+                                                 maskVolume);
             break;
         }
 #ifdef ITK_SUPPORTS_LONGLONG
 	case itk::ImageIOBase::ULONGLONG:
         {
-            Image3D<unsigned long long> image = dicom?Read_Itk_Image_Series<unsigned long long>(imagePath):Read_Itk_Image<unsigned long long>(imagePath);
+            Image3D<unsigned long long> image = dicom?Read_Itk_Image_Series<unsigned long long>(inputVolume):Read_Itk_Image<unsigned long long>(inputVolume);
             error = RORPO_multiscale_usage<unsigned long long>(image,
-                                                               outputPath,
+                                                               outputVolume,
                                                                scaleList,
                                                                window,
                                                                nbCores,
                                                                dilationSize,
                                                                verbose,
                                                                normalize,
-                                                               maskPath);
+                                                               maskVolume);
             break;
         }
         case itk::ImageIOBase::LONGLONG:
         {
-            Image3D<long long> image = dicom?Read_Itk_Image_Series<long long>(imagePath):Read_Itk_Image<long long>(imagePath);
+            Image3D<long long> image = dicom?Read_Itk_Image_Series<long long>(inputVolume):Read_Itk_Image<long long>(inputVolume);
             error = RORPO_multiscale_usage<long long>(image,
-                                                      outputPath,
+                                                      outputVolume,
                                                       scaleList,
                                                       window,
                                                       nbCores,
                                                       dilationSize,
                                                       verbose,
                                                       normalize,
-                                                      maskPath);
+                                                      maskVolume);
             break;
         }
 #endif // ITK_SUPPORTS_LONGLONG
         case itk::ImageIOBase::FLOAT:
         {
-            Image3D<float> image = dicom?Read_Itk_Image_Series<float>(imagePath):Read_Itk_Image<float>(imagePath);
+            Image3D<float> image = dicom?Read_Itk_Image_Series<float>(inputVolume):Read_Itk_Image<float>(inputVolume);
             error = RORPO_multiscale_usage<float>(image,
-                                                  outputPath,
+                                                  outputVolume,
                                                   scaleList,
                                                   window,
                                                   nbCores,
                                                   dilationSize,
                                                   verbose,
                                                   normalize,
-                                                  maskPath);
+                                                  maskVolume);
             break;
         }
         case itk::ImageIOBase::DOUBLE:
         {
-            Image3D<double> image = dicom?Read_Itk_Image_Series<double>(imagePath):Read_Itk_Image<double>(imagePath);
+            Image3D<double> image = dicom?Read_Itk_Image_Series<double>(inputVolume):Read_Itk_Image<double>(inputVolume);
             error = RORPO_multiscale_usage<double>(image,
-                                                   outputPath,
+                                                   outputVolume,
                                                    scaleList,
                                                    window,
                                                    nbCores,
                                                    dilationSize,
                                                    verbose,
                                                    normalize,
-                                                   maskPath);
+                                                   maskVolume);
             break;
         }
         case itk::ImageIOBase::UNKNOWNCOMPONENTTYPE:
@@ -503,5 +520,4 @@ int main(int argc, char **argv) {
             break;
     }
     return error;
-
 }//end main
