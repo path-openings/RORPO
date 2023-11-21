@@ -284,8 +284,8 @@ int main(int argc, char **argv) {
     if (args["--mask"])
         maskVolume = args["--mask"].asString();
 
-    if (args["--core"])
-        nbCores = std::stoi(args["--core"].asString());
+    if (args["--nbCores"])
+        nbCores = std::stoi(args["--nbCores"].asString());
 
     if(args["--dilationSize"])
         dilationSize = std::stoi(args["--dilationSize"].asString());
