@@ -1,3 +1,10 @@
+# Documentation
+RORPO stands for Ranking the Orientation Responses of Path Operators. It is a non-linear vesselness filter based on the work of 
+
+Merveille, O., Talbot, H., Najman, L., & Passat, N. (2017). Curvilinear structure analysis by ranking the orientation responses of path operators. IEEE transactions on pattern analysis and machine intelligence, 40(2), 304-317.
+
+This is free software 
+
 # RORPO Multiscale Usage
 
 Compute the RORPO multiscale for blood vessels from a .nii image.
