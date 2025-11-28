@@ -33,6 +33,7 @@ odyssee.merveille@gmail.com
 #include <iostream>
 #include <string>
 #include <vector>
+#include <optional>
 #include <sys/stat.h>
 
 #include "Image/Image.hpp"
