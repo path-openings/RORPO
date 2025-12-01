@@ -146,6 +146,53 @@ void Stuff_PO(Image3D<T> &dilatImageWithBorders,
     }
 }
 
+template<typename T, typename MaskType>
+int OnePO(const Image3D<T> &image, int L, Image3D<T> &PO, 
+                                      int orientation_x, int orientation_y, int orientation_z,
+                                      int nb_core, int dilationSize, Image3D<MaskType> &Mask) 
+{
+    int retval = 0;
+    // ################### Dilation + Add border on image ######################
+
+    int orientations[3] = {orientation_x, orientation_y, orientation_z};
+
+    // Dilation
+    Image3D<T> imageDilat=image.copy_image();
+
+    rect3dminmax(imageDilat.get_pointer(), imageDilat.dimX(), imageDilat.dimY(),
+                 imageDilat.dimZ(), dilationSize, dilationSize, dilationSize, false);
+
+    Image3D<T> dilatImageWithBorders=imageDilat.add_border(2);
+    imageDilat.clear_image();
+
+    PO.copy_image(dilatImageWithBorders);
+
+    std::vector<long> index_image;
+    std::vector<bool> b(dilatImageWithBorders.size(),1);
+
+    Stuff_PO(dilatImageWithBorders, index_image, L, b, Mask);
+
+
+
+    // ############################ COMPUTE PO #################################
+
+
+    std::cout<<"------- RPO computation with scale " <<L<< "-------"<<std::endl;
+
+    PO_3D<T, MaskType>(dilatImageWithBorders, L, index_image, orientations[i], PO, b);
+
+    std::cout << "orientation" << orientations[0] << " "
+                               << orientations[1] << " "
+                               << orientations[2] << " : passed"
+                               << std::endl;
+
+    dilatImageWithBorders.clear_image();
+
+    PO.remove_border(2);
+
+    return retval;
+}
+
 
 template<typename T, typename MaskType>
 std::array<std::vector<int>, 7> RPO(const Image3D<T> &image, int L, Image3D<T> &RPO1,
@@ -169,7 +216,7 @@ std::array<std::vector<int>, 7> RPO(const Image3D<T> &image, int L, Image3D<T> &
 
     // ################### Dilation + Add border on image ######################
 
-	// Dilatation
+    // Dilation
     Image3D<T> imageDilat=image.copy_image();
 
     rect3dminmax(imageDilat.get_pointer(), imageDilat.dimX(), imageDilat.dimY(),
@@ -182,7 +229,7 @@ std::array<std::vector<int>, 7> RPO(const Image3D<T> &image, int L, Image3D<T> &
         rpo->copy_image(dilatImageWithBorders);
 
     std::vector<long> index_image;
-    std::vector<bool>b(dilatImageWithBorders.size(),1);
+    std::vector<bool> b(dilatImageWithBorders.size(),1);
 
     Stuff_PO(dilatImageWithBorders, index_image, L, b, Mask);
 
@@ -191,7 +238,7 @@ std::array<std::vector<int>, 7> RPO(const Image3D<T> &image, int L, Image3D<T> &
     // ############################ COMPUTE PO #################################
 
 
-	std::cout<<"------- RPO computation with scale " <<L<< "-------"<<std::endl;
+    std::cout<<"------- RPO computation with scale " <<L<< "-------"<<std::endl;
 
     // Calling PO for each orientation
     omp_set_num_threads(nb_core);
@@ -216,7 +263,7 @@ std::array<std::vector<int>, 7> RPO(const Image3D<T> &image, int L, Image3D<T> &
     }
     #endif
 
-	 std::cout<<"RPO computation completed"<<std::endl;
+    std::cout<<"RPO computation completed"<<std::endl;
 
     dilatImageWithBorders.clear_image();
 

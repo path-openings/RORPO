@@ -128,7 +128,7 @@ int RORPO_multiscale_usage(Image3D<PixelType> &image,
     if (verbose){
         std::cout << "dimensions: [" << dimx << ", " << dimy << ", " << dimz << "]" << std::endl;
         std::cout << "spacing: [" << spacingX << ", " << spacingY << ", " << spacingZ << "]" << std::endl;
-	}
+    }
 
     // ------------------ Compute input image intensity range ------------------
 
@@ -138,7 +138,7 @@ int RORPO_multiscale_usage(Image3D<PixelType> &image,
         std::cout<< "Image intensity range: "<< (int)minmax.first << ", "
                  << (int)minmax.second << std::endl;
         std::cout<<std::endl;
-	}
+    }
 
     // ------------------------ Negative intensities -----------------------
     if (minmax.first < 0)
@@ -152,7 +152,7 @@ int RORPO_multiscale_usage(Image3D<PixelType> &image,
     Image3D<uint8_t> mask;
 
     if (!maskVolume.empty()) // A mask image is given
-	{
+    {
         mask = Read_Itk_Image<uint8_t>(maskVolume);
 
         if (mask.dimX() != dimx || mask.dimY() != dimy || mask.dimZ() != dimz){
@@ -457,7 +457,7 @@ int main(int argc, char **argv) {
             break;
         }
 #ifdef ITK_SUPPORTS_LONGLONG
-	case itk::ImageIOBase::ULONGLONG:
+        case itk::ImageIOBase::ULONGLONG:
         {
             Image3D<unsigned long long> image = dicom?Read_Itk_Image_Series<unsigned long long>(inputVolume):Read_Itk_Image<unsigned long long>(inputVolume);
             error = RORPO_multiscale_usage<unsigned long long>(image,
