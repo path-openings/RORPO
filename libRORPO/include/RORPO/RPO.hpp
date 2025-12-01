@@ -179,7 +179,7 @@ int OnePO(const Image3D<T> &image, int L, Image3D<T> &PO,
 
     std::cout<<"------- RPO computation with scale " <<L<< "-------"<<std::endl;
 
-    PO_3D<T, MaskType>(dilatImageWithBorders, L, index_image, orientations[i], PO, b);
+    PO_3D<T, MaskType>(dilatImageWithBorders, L, index_image, orientations, PO, b);
 
     std::cout << "orientation" << orientations[0] << " "
                                << orientations[1] << " "
