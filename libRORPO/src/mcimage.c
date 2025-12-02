@@ -2062,7 +2062,7 @@ struct xvimage * readimage( const char *filename )
   double xdim=1.0, ydim=1.0, zdim=1.0;
   char *read;
   char tag;
-  int boolean;
+  int retval;
 
   fd = pink_fopen_read(filename);
 
@@ -2227,11 +2227,11 @@ struct xvimage * readimage( const char *filename )
 	      b3 = b2 + N;
 	      for (i = 0; i < N; i++)
               {
-		boolean = fscanf(fd, "%d", &c);
+		retval = fscanf(fd, "%d", &c);
 		b1[i] = (uint8_t)c;
-		boolean = fscanf(fd, "%d", &c);
+		retval = fscanf(fd, "%d", &c);
 		b2[i] = (uint8_t)c;
-		boolean = fscanf(fd, "%d", &c);
+		retval = fscanf(fd, "%d", &c);
 		b3[i] = (uint8_t)c;
               } // for i
 	    } // if color
@@ -2240,7 +2240,7 @@ struct xvimage * readimage( const char *filename )
 	      N = rs * cs * ds * nb;
 	      for (i = 0; i < N; i++)
               {
-                  boolean = fscanf(fd, "%d", &c);
+                  retval = fscanf(fd, "%d", &c);
                   UCHARDATA(image)[i] = (uint8_t)c;
               } // for i
 	    }
@@ -2293,7 +2293,7 @@ struct xvimage * readimage( const char *filename )
                   uint16_t tmp;
                   for (i = 0; i < N; i++)
                   {
-                      boolean = fscanf(fd, "%hd", &tmp); (SSHORTDATA(image)[i]) = tmp;
+                      retval = fscanf(fd, "%hd", &tmp); (SSHORTDATA(image)[i]) = tmp;
                   } /* for i */
               }
               else // Standard PGM format imposes big-endian for 2-byte images, but
@@ -2302,7 +2302,7 @@ struct xvimage * readimage( const char *filename )
                   uint8_t tmp1;
                   for (i = 0; i < N; i++)
                   {
-                      boolean = fread(&tmp, sizeof(uint16_t), 1, fd);
+                      retval = fread(&tmp, sizeof(uint16_t), 1, fd);
                       // conversion big-endian -> little-endian
                       tmp1 = tmp & 0x00ff;
                       tmp = tmp >> 8;
@@ -2319,7 +2319,7 @@ struct xvimage * readimage( const char *filename )
                       long int tmp;
                       for (i = 0; i < N; i++)
                       {
-                          boolean = fscanf(fd, "%ld", &tmp); (SLONGDATA(image)[i]) = (int32_t)tmp;
+                          retval = fscanf(fd, "%ld", &tmp); (SLONGDATA(image)[i]) = (int32_t)tmp;
                       } /* for i */
                   }
                   else
@@ -2343,7 +2343,7 @@ struct xvimage * readimage( const char *filename )
                       {
                           for (i = 0; i < N; i++)
                           {
-                              boolean = fscanf(fd, "%f", &(FLOATDATA(image)[i]));
+                              retval = fscanf(fd, "%f", &(FLOATDATA(image)[i]));
                           } /* for i */
                       }
                       else
@@ -2367,7 +2367,7 @@ struct xvimage * readimage( const char *filename )
                           {
                               for (i = 0; i < N; i++)
                               {
-                                  boolean = fscanf(fd, "%lf", &(DOUBLEDATA(image)[i]));
+                                  retval = fscanf(fd, "%lf", &(DOUBLEDATA(image)[i]));
                               } /* for i */
                           }
                           else
@@ -2391,7 +2391,7 @@ struct xvimage * readimage( const char *filename )
                               {
                                   for (i = 0; i < N+N; i++)
                                   {
-                                      boolean = fscanf(fd, "%f", &(FLOATDATA(image)[i]));
+                                      retval = fscanf(fd, "%f", &(FLOATDATA(image)[i]));
                                   } /* for i */
                               }
                               else
@@ -2540,7 +2540,7 @@ de la forme :
   int32_t c, ndgmax;
   int32_t dimorigin = 0;
   char *read;
-  int boolean;
+  int retval;
 
   fd = pink_fopen_read(filename);
 
@@ -2646,13 +2646,13 @@ de la forme :
       if (ndgmax == 255)
         for (i = 0; i < N; i++)
         {
-          boolean = fscanf(fd, "%d", &c);
+          retval = fscanf(fd, "%d", &c);
           UCHARDATA(image)[i] = (uint8_t)c;
         } /* for i */
       else if (ndgmax == 65535)
         for (i = 0; i < N; i++)
         {
-          boolean = fscanf(fd, "%d", &c);
+          retval = fscanf(fd, "%d", &c);
           UCHARDATA(image)[i] = (uint8_t)(c/256);
         } /* for i */
       else
@@ -2712,7 +2712,7 @@ int32_t readrgbimage(
   int32_t c;
   char *read;
   int32_t nndg, ndgmax;
-  int boolean;
+  int retval;
 
   fd = pink_fopen_read(filename);
 
@@ -2798,11 +2798,11 @@ int32_t readrgbimage(
   if (ascii)
     for (i = 0; i < N; i++)
     {
-      boolean = fscanf(fd, "%d", &c);
+      retval = fscanf(fd, "%d", &c);
       (UCHARDATA(*r))[i] = (uint8_t)c;
-      boolean = fscanf(fd, "%d", &c);
+      retval = fscanf(fd, "%d", &c);
       (UCHARDATA(*g))[i] = (uint8_t)c;
-      boolean = fscanf(fd, "%d", &c);
+      retval = fscanf(fd, "%d", &c);
       (UCHARDATA(*b))[i] = (uint8_t)c;
     } /* for i */
   else
