@@ -9,6 +9,7 @@
     <documentation-url></documentation-url>
     <license></license>
     <contributor>Jonas Lamy</contributor>
+    <contributor>Hugues Talbot </contributor>
 
     <parameters>
         <label>
@@ -139,5 +140,27 @@
             <longflag>output</longflag>
             <description>Output filtered</description>
         </image>
+    </parameters>
+
+    <parameters>
+	    <label>Debug</label>
+	    <description>Test parameters</description>
+	    <boolean>
+		    <name>po-only</name>
+		    <label>po-only></label>
+		    <longflag>po-only</longflag>
+		    <default>0</default>
+	    </boolean>
+	    <integer-vector>
+	   	 <name>orientation</name>
+	    	<label>orientation</label>
+	    	<longflag>orientation</longflag>
+	    	<default>1,0,0</default>
+	    	<constraints>
+			<minimum>-1</minimum>
+			<maximum>1</maximum>
+			<step>1</step>
+	    	</constraints>
+	</integer-vector>
     </parameters>
 </executable>
