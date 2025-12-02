@@ -1,5 +1,5 @@
 # RORPO_multiscale usage executable
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.10)
 project (RORPO_multiscale_usage)
 
 
