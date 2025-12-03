@@ -348,9 +348,18 @@ int main(int argc, char **argv) {
 	Image3D<unsigned char> image = dicom?Read_Itk_Image_Series<unsigned char>(inputVolume):Read_Itk_Image<unsigned char>(inputVolume);
 	// To be continued
 	if (verbose) {
-		std::cout << "Direction: " << direction << std::endl;
+		std::cout << "Orientation: " ;
+		for (unsigned int _i =0; _i < orientation.size(); _i++) { 
+			std::cout << orientation[_i] << ", ";
+		}
 	}
-    else {
+	Image3D<uint8_t> maskImage; // only declared, not used.
+	outputImage = SinglePO(image, int L, int dilationSize, maskImage, direction);
+	if (outputImage) {
+		Write_Itk_Image<uint8_t>(outputImage, outputVolume);
+		error = 0;
+	}
+    } else {
       switch (imageMetadata.pixelType){
         case itk::ImageIOBase::UCHAR:
         {
