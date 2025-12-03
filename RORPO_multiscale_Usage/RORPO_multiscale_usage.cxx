@@ -305,7 +305,7 @@ int main(int argc, char **argv) {
         window[2] = 2; // convert input image to uint8
     else
         window[2] = 0; // --window not used
-    #endif
+    #endif // ndef SLIDER_BINDING
 
     // -------------------------- Scales computation ---------------------------
 
@@ -343,7 +343,15 @@ int main(int argc, char **argv) {
 
     std::error_code ec; // For using the non-throwing overloads of functions below.
     bool dicom = isDir(inputVolume); // check if path is a directory (DICOM) of a file (.nii,.nrrd,etc.)
-    switch (imageMetadata.pixelType){
+    if (POonly) {
+	// Only uint8_t is support, this is for debugging
+	Image3D<unsigned char> image = dicom?Read_Itk_Image_Series<unsigned char>(inputVolume):Read_Itk_Image<unsigned char>(inputVolume);
+	// To be continued
+	if (verbose) {
+		std::cout << "Direction: " << direction << std::endl;
+	}
+    else {
+      switch (imageMetadata.pixelType){
         case itk::ImageIOBase::UCHAR:
         {
             Image3D<unsigned char> image = dicom?Read_Itk_Image_Series<unsigned char>(inputVolume):Read_Itk_Image<unsigned char>(inputVolume);
@@ -519,6 +527,7 @@ int main(int argc, char **argv) {
             error = 1;
             std::cout << "Error: pixel type unknown." << std::endl;
             break;
-    }
+      } // switch
+    } // else (!POonly)
     return error;
 }//end main

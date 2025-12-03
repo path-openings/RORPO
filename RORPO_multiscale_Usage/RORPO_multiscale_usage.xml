@@ -8,8 +8,7 @@
     <version>1.0</version>
     <documentation-url></documentation-url>
     <license></license>
-    <contributor>Jonas Lamy</contributor>
-    <contributor>Hugues Talbot </contributor>
+    <contributor>Jonas Lamy, Hugues Talbot </contributor>
 
     <parameters>
         <label>
@@ -146,13 +145,13 @@
 	    <label>Debug</label>
 	    <description>Test parameters</description>
 	    <boolean>
-		    <name>po-only</name>
-		    <label>po-only></label>
-		    <longflag>po-only</longflag>
-		    <default>0</default>
+		<name>POonly</name>
+		<label>Path Opening only></label>
+		<longflag>POonly</longflag>
+		<default>0</default>
 	    </boolean>
 	    <integer-vector>
-	   	 <name>orientation</name>
+		<name>orientation</name>
 	    	<label>orientation</label>
 	    	<longflag>orientation</longflag>
 	    	<default>1,0,0</default>
@@ -161,6 +160,6 @@
 			<maximum>1</maximum>
 			<step>1</step>
 	    	</constraints>
-	</integer-vector>
+	    </integer-vector>
     </parameters>
 </executable>
