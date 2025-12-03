@@ -354,10 +354,13 @@ int main(int argc, char **argv) {
 		}
 	}
 	Image3D<uint8_t> maskImage; // only declared, not used.
-	outputImage = SinglePO(image, int L, int dilationSize, maskImage, direction);
-	if (outputImage) {
-		Write_Itk_Image<uint8_t>(outputImage, outputVolume);
-		error = 0;
+
+	if (orientation.size() >= 3) {
+	    Image3D<uint8_t> outputImage = SinglePO(image, scaleList[0], dilationSize, maskImage, orientation);
+	    Write_Itk_Image<uint8_t>(outputImage, outputVolume);
+	    error = 0;
+	} else {
+	    error = 1; // something went wrong
 	}
     } else {
       switch (imageMetadata.pixelType){

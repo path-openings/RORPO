@@ -154,7 +154,7 @@ int OnePO(const Image3D<T> &image, int L, Image3D<T> &PO,
     int retval = 0;
     // ################### Dilation + Add border on image ######################
 
-    int orientations[3] = {orientation_x, orientation_y, orientation_z};
+    std::vector<int> orientations {orientation_x, orientation_y, orientation_z};
 
     // Dilation
     Image3D<T> imageDilat=image.copy_image();

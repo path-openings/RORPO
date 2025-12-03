@@ -48,21 +48,20 @@ odyssee.merveille@gmail.com
 #include "RORPO/RPO.hpp"
 
 template<typename T, typename MaskType>
-Image3D<T> SinglePO(const Image3D<T> &image, int L, int dilationSize, Image3D<MaskType> &mask, std::shared_ptr<std::vector<int>> direction = nullptr)
+Image3D<T> SinglePO(const Image3D<T> &image, int L, int dilationSize, Image3D<MaskType> &mask, std::vector<int> &direction)
 {
     int retval = 1; 
     // Create Ouput image
     Image3D<T> myRPO(image.dimX() + 4, image.dimY() + 4, image.dimZ() + 4, 2); // why 2?
 								       
-    if (direction && (direction.size() >= 3) {
-        retval = OnePO(image, L, myRPO, direction[0],direction[1],direction[2], 1, dilationSize, mask);
+    if (direction.size() >= 3) {
+        retval = OnePO(image, L, myRPO, direction[0], direction[1], direction[2], 1, dilationSize, mask);
     }
 
-    if (retval == 0) {
-        return myRPO;
-    } else {
-        return nullptr;
-    }
+    if (retval != 0) {
+	std::cerr << "Path opening failed !" << std::endl;
+    } 
+    return myRPO;
 }
 
 template<typename T, typename MaskType>
